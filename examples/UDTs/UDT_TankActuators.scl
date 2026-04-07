@@ -1,0 +1,13 @@
+TYPE "UDT_TankActuators"
+    STRUCT
+        DischargeValve  : Real;   // %QD30 - Válvula descarga (0.0–10.0)
+        FillValve       : Real;   // %QD34 - Válvula enchimento (0.0–10.0)
+        TimerDisplay    : DInt;   // %QD38 - Display timer (segundos)
+        LightRed        : Bool;   // %Q1.0 - Torre vermelha (EMERGÊNCIA)
+        LightGreen      : Bool;   // %Q1.1 - Torre verde (OK/RUNNING)
+        LightYellow     : Bool;   // %Q1.2 - Torre amarela (ATENÇÃO)
+        StartLight      : Bool;   // %Q1.3 - Luz botão Start
+        ResetLight      : Bool;   // %Q1.4 - Luz botão Reset
+        StopLight       : Bool;   // %Q1.5 - Luz botão Stop
+    END_STRUCT;
+END_TYPE

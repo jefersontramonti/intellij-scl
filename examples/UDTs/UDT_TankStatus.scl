@@ -1,0 +1,14 @@
+TYPE "UDT_TankStatus"
+    STRUCT
+        State           : Int;    // Estado FSM (0=IDLE..99=EMERGENCY)
+        IsRunning       : Bool;   // TRUE em FILLING (2) ou TIMER_CTRL (4)
+        IsFault         : Bool;   // TRUE em FAULT (98) ou EMERGENCY (99)
+        FaultCode       : Int;    // Código de falha ativo (0 = sem falha)
+        LevelMeter      : Real;   // Nível atual em metros (0.0–10.0)
+        FlowMeter       : Real;   // Fluxo atual em m³/h (0.0–10.0)
+        FillValvePos    : Real;   // Posição válvula enchimento (0.0–10.0)
+        DrainValvePos   : Real;   // Posição válvula esvaziamento (0.0–10.0)
+        TimerElapsed    : DInt;   // Segundos decorridos no ciclo ativo
+        CycleCount      : DInt;   // Ciclos completos desde o último reset
+    END_STRUCT;
+END_TYPE

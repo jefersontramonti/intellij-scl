@@ -1,0 +1,12 @@
+TYPE "UDT_TankSensors"
+    STRUCT
+        EStop       : Bool;   // %I0.3 - E-Stop NF (TRUE=seguro, FALSE=emergência)
+        FaultReset  : Bool;   // %I0.4 - Botão Reset (momentary)
+        Start       : Bool;   // %I0.5 - Botão Start (momentary)
+        Stop        : Bool;   // %I0.6 - Botão Stop (momentary)
+        FlowMeter   : Real;   // %ID30 - Fluxo de entrada (0.0–10.0 m³/h)
+        LevelMeter  : Real;   // %ID34 - Nível do tanque (0.0–10.0 m)
+        PotFill     : Real;   // %ID38 - Potenciômetro enchimento (0.0–10.0)
+        PotDrain    : Real;   // %ID42 - Potenciômetro drenagem (0.0–10.0)
+    END_STRUCT;
+END_TYPE

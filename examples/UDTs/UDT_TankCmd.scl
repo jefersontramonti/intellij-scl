@@ -1,0 +1,12 @@
+TYPE "UDT_TankCmd"
+    STRUCT
+        Start           : Bool;           // Comando start via HMI
+        Stop            : Bool;           // Comando stop via HMI
+        FaultReset      : Bool;           // Reset de falha via HMI
+        TimerMode       : Bool;           // TRUE=modo timer / FALSE=modo manual
+        FillTime        : Time;           // Tempo enchimento (padrão T#30S)
+        DrainTime       : Time;           // Tempo esvaziamento (padrão T#20S)
+        LevelHiLimit    : Real;           // Limite máximo nível (padrão 9.5 m)
+        LevelLoLimit    : Real;           // Limite mínimo nível (padrão 0.2 m)
+    END_STRUCT;
+END_TYPE

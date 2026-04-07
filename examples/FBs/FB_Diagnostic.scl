@@ -1,0 +1,66 @@
+FUNCTION_BLOCK "FB_Diagnostic"
+{ S7_Optimized_Access := 'TRUE' }
+//=============================================================
+// FB_Diagnostic — Histórico de Falhas (Ring Buffer 20)
+// Projeto : 3 – Filling Tank (Timers)
+// Rev     : 1.0 | 2026-04-02
+//
+// Detecta transições de FaultCode (0→falha ou falha→nova)
+// e registra no buffer circular s_FaultHistory[0..19].
+// O índice avança automaticamente; ao atingir 19, volta a 0.
+//=============================================================
+
+VAR_INPUT
+    i_FaultCode : Int;   // Código de falha atual (0 = sem falha)
+    i_State     : Int;   // Estado FSM atual (para contexto futuro)
+END_VAR
+
+VAR_OUTPUT
+    o_FaultCount : DInt;   // Total acumulado de falhas registradas
+    o_LastFault  : Int;    // Último código de falha registrado
+END_VAR
+//(**)
+VAR
+    s_FaultHistory  : ARRAY[0..19] OF Int;   // Ring buffer 20 entradas
+    s_BufferIndex   : Int  := 0;             // Próxima posição de escrita
+    s_FaultCount    : DInt := 0;             // Contador cumulativo
+    s_LastFaultCode : Int  := 0;             // Último código registrado
+    s_PrevFaultCode : Int  := 0;             // Código da varredura anterior
+END_VAR
+
+BEGIN
+    //==========================================================
+    // DETECÇÃO DE NOVA FALHA
+    // Condição: código mudou E não é zero
+    //   - 0 → X  : nova falha
+    //   - X → Y  : falha diferente (sem reset entre elas)
+    // Não registra o retorno a 0 (falha limpa não é evento)
+    //==========================================================
+    IF (i_FaultCode <> 0) AND (i_FaultCode <> s_PrevFaultCode) THEN
+
+        // Escreve no ring buffer na posição atual
+        s_FaultHistory[s_BufferIndex] := i_FaultCode;
+
+        // Avança índice circular (0..19)
+        IF s_BufferIndex >= 19 THEN
+            s_BufferIndex := 0;
+        ELSE
+            s_BufferIndex := s_BufferIndex + 1;
+        END_IF;
+
+        // Atualiza contadores e último código
+        s_FaultCount    := s_FaultCount + 1;
+        s_LastFaultCode := i_FaultCode;
+
+    END_IF;
+
+    // Guarda código corrente para comparação na próxima varredura
+    s_PrevFaultCode := i_FaultCode;
+
+    //==========================================================
+    // OUTPUTS
+    //==========================================================
+    o_FaultCount := s_FaultCount;
+    o_LastFault  := s_LastFaultCode;
+
+END_FUNCTION_BLOCK
