@@ -253,6 +253,9 @@ import com.scl.plugin.psi.SclTypes;
 "<"                       { return SclTypes.LT; }
 ">"                       { return SclTypes.GT; }
 "&"                       { return SclTypes.AMPERSAND; }
+/* Chaves — atributos de bloco TIA Portal / SCLV4 Apendice B.3 */
+"{"                       { return SclTypes.LBRACE; }
+"}"                       { return SclTypes.RBRACE; }
 
 /* ── Identificadores (SCLV4 Apendice B.1 — IDENTIFIER rule) ─────────────── */
 /* Deve vir DEPOIS de todas as palavras-chave                                 */

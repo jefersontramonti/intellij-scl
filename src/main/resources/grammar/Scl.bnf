@@ -198,6 +198,10 @@
     LEQ       = '<='
     GEQ       = '>='
 
+    // ── Chaves — atributos de bloco TIA Portal / SCLV4 ───────────────────
+    LBRACE = '{'
+    RBRACE = '}'
+
     // ── Identificadores e acesso a memoria Siemens ────────────────────────
     IDENTIFIER    = 'id'
     MEMORY_ACCESS = '%address'
@@ -228,12 +232,21 @@ topLevelDecl ::= functionBlockDecl
 // private: nao gera PSI node proprio — inline nas regras de bloco
 private blockName ::= IDENTIFIER | QUOTED_IDENTIFIER
 
+// Atributos de bloco — TIA Portal e SCLV4 Apendice B.3
+// Aparecem apos o nome do bloco, antes das varSections.
+// Formato TIA Portal: { S7_Optimized_Access := 'TRUE' }
+// Multiplos blocos de atributos sao permitidos (um por linha e comum).
+// private: sem PSI node proprio — apenas consumido pelo parser.
+private blockAttributes ::= LBRACE blockAttr (COMMA blockAttr)* RBRACE
+private blockAttr ::= IDENTIFIER ASSIGN expression
+
 // FB Declaration Section: Constants? Labels? Temp? Static? Parameters?
 functionBlockDecl ::= FUNCTION_BLOCK blockName
+                      blockAttributes*
                       constSection?
                       labelSection?
                       varSection*
-                      BEGIN statementList
+                      (BEGIN statementList)?
                       END_FUNCTION_BLOCK {
   pin=1
 }
@@ -241,20 +254,22 @@ functionBlockDecl ::= FUNCTION_BLOCK blockName
 // FC Declaration Section: Constants? Labels? Temp? Parameters?
 // Retorno pode ser tipo de dados ou VOID (Apendice C.1)
 functionDecl ::= FUNCTION blockName COLON (VOID | typeRef)
+                 blockAttributes*
                  constSection?
                  labelSection?
                  varSection*
-                 BEGIN statementList
+                 (BEGIN statementList)?
                  END_FUNCTION {
   pin=1
 }
 
 // OB Declaration Section: Constants? Labels? Temp?
 orgBlockDecl ::= ORGANIZATION_BLOCK blockName
+                 blockAttributes*
                  constSection?
                  labelSection?
                  varSection*
-                 BEGIN statementList
+                 (BEGIN statementList)?
                  END_ORGANIZATION_BLOCK {
   pin=1
 }
@@ -262,6 +277,7 @@ orgBlockDecl ::= ORGANIZATION_BLOCK blockName
 // DB Declaration Section: pode ser Interface (varSection), STRUCT ou UDT ref
 // BEGIN inicia secao de atribuicoes (inicializadores)
 dataBlockDecl ::= DATA_BLOCK blockName
+                  blockAttributes*
                   (varSection | structDecl)*
                   (BEGIN dbAssignList)?
                   END_DATA_BLOCK {
