@@ -162,11 +162,19 @@ private object SclKeywordCompletionProvider : CompletionProvider<CompletionParam
         context: ProcessingContext,
         result: CompletionResultSet,
     ) {
-        // Nao completar dentro de comentarios ou literais string
-        val tokenType = parameters.position.node?.elementType
-        if (tokenType == SclTypes.LINE_COMMENT  ||
-            tokenType == SclTypes.BLOCK_COMMENT ||
-            tokenType == SclTypes.STRING_LITERAL) return
+        // Verificacao imperativa: cobre tanto o token direto quanto o elemento
+        // pai (ex: texto digitado dentro de um BLOCK_COMMENT cria um filho do
+        // no de comentario — o PlatformPatterns sozinho nao captura esse caso).
+        val element     = parameters.position
+        val elementType = element.node?.elementType
+        val parentType  = element.parent?.node?.elementType
+
+        if (elementType == SclTypes.LINE_COMMENT   ||
+            elementType == SclTypes.BLOCK_COMMENT  ||
+            elementType == SclTypes.STRING_LITERAL ||
+            parentType  == SclTypes.LINE_COMMENT   ||
+            parentType  == SclTypes.BLOCK_COMMENT
+        ) return
 
         // Case-insensitive: usuario pode digitar 'if' e receber 'IF'
         val r = result.caseInsensitive()
