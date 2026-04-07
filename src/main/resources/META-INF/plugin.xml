@@ -1,38 +1,45 @@
 <!-- ─────────────────────────────────────────────────────────────────────────
      plugin.xml — Manifesto do plugin SCL Language Support
-     Todos os extension points verificados contra:
+     Extension points verificados em:
      https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html
      ───────────────────────────────────────────────────────────────────────── -->
 <idea-plugin>
 
-    <!-- ID unico do plugin no JetBrains Marketplace -->
     <id>com.scl.plugin.scl-language-support</id>
     <name>SCL Language Support</name>
     <vendor>SCL Plugin</vendor>
 
     <description><![CDATA[
-        Suporte completo a linguagem SCL (Structured Control Language) para
-        Siemens TIA Portal V19 no IntelliJ IDEA.<br/><br/>
-        <b>Fase 1 — Fundacao:</b><br/>
+        Full language support for SCL (Structured Control Language) —
+        Siemens TIA Portal V19 / STEP 7 S7-300/400.<br/><br/>
+        <b>Phase 1 — Foundation:</b>
         <ul>
-          <li>Syntax Highlighting para todos os tokens SCL</li>
-          <li>Reconhecimento de arquivos .scl</li>
-          <li>Suporte a comentarios de linha (//) e bloco (* ... *)</li>
-          <li>Highlighting de acesso direto a memoria (%M, %I, %Q)</li>
+          <li>Syntax highlighting for all SCL tokens</li>
+          <li>.scl / .SCL file type recognition</li>
+          <li>Line (//) and block (* … *) comments</li>
+          <li>Siemens memory access highlighting (%MW, %I, %Q)</li>
+        </ul>
+        <b>Phase 2 — Parser &amp; Editor Basics:</b>
+        <ul>
+          <li>Full BNF grammar (Grammar-Kit) with complete PSI tree</li>
+          <li>Code folding: blocks, var sections, IF/FOR/WHILE/REGION/CONST</li>
+          <li>Commenter: Ctrl+/ for // and Ctrl+Shift+/ for (* … *)</li>
+        </ul>
+        <b>Phase 3 — Completion &amp; Templates:</b>
+        <ul>
+          <li>Keyword / type / constant completion (Ctrl+Space)</li>
+          <li>10 live templates: if, ife, case, for, while, repeat, fb, var, region, ton</li>
+          <li>Color settings page: Settings → Editor → Color Scheme → SCL</li>
         </ul>
     ]]></description>
 
-    <!-- Dependencia minima: modulo platform (Community e Ultimate) -->
-    <!-- Nao adicionar dependencia de Java para manter compatibilidade com Community -->
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
 
-        <!-- ── Tipo de arquivo .scl ──────────────────────────────────────
-             fieldName="INSTANCE" e OBRIGATORIO — referencia o campo estatico
-             na classe SclFileType.
-             Fonte: https://plugins.jetbrains.com/docs/intellij/language-and-filetype.html
-             "Register the LanguageFileType with the IntelliJ Platform"
+        <!-- ── File type ──────────────────────────────────────────────────
+             fieldName="INSTANCE" e obrigatorio — referencia o campo estatico
+             gerado automaticamente pelo Kotlin object SclFileType.
              ──────────────────────────────────────────────────────────── -->
         <fileType
             name="SCL File"
@@ -41,54 +48,61 @@
             language="SCL"
             extensions="scl;SCL"/>
 
-        <!-- ── Parser Definition ────────────────────────────────────────
-             Ponto central: conecta Language → Lexer → Parser → PSI
+        <!-- ── Parser Definition ─────────────────────────────────────────
+             Conecta Language → Lexer → Parser → PSI.
              ──────────────────────────────────────────────────────────── -->
         <lang.parserDefinition
             language="SCL"
             implementationClass="com.scl.plugin.parser.SclParserDefinition"/>
 
-        <!-- ── Syntax Highlighting ──────────────────────────────────────
-             SyntaxHighlighterFactory e o padrao para 2023.1+
-             Fonte: https://plugins.jetbrains.com/docs/intellij/syntax-highlighter-and-color-settings-page.html
+        <!-- ── Syntax Highlighting ───────────────────────────────────────
+             SyntaxHighlighterFactory e o padrao para 2023.1+.
              ──────────────────────────────────────────────────────────── -->
         <lang.syntaxHighlighterFactory
             language="SCL"
             implementationClass="com.scl.plugin.highlighting.SclSyntaxHighlighterFactory"/>
 
-        <!-- ── Color Settings Page ──────────────────────────────────────
-             Aparece em: Settings > Editor > Color Scheme > SCL
-             Permite ao usuario customizar as cores do highlighting
-             (implementado na Fase 3)
+        <!-- ── Color Settings Page ───────────────────────────────────────
+             Settings → Editor → Color Scheme → SCL
              ──────────────────────────────────────────────────────────── -->
-        <!--
         <colorSettingsPage
             implementation="com.scl.plugin.highlighting.SclColorSettingsPage"/>
-        -->
 
-        <!-- ── Code Folding ────────────────────────────────────────────
-             Fase 2: recolhe FUNCTION_BLOCK, FUNCTION, VAR, IF, FOR,
-             WHILE, CASE, REPEAT e comentarios de bloco longos.
-             ──────────────────────────────────────────────────────── -->
+        <!-- ── Code Folding ──────────────────────────────────────────────
+             Recolhe blocos, var sections, IF/FOR/WHILE/CASE/REGION/CONST.
+             ──────────────────────────────────────────────────────────── -->
         <lang.foldingBuilder
             language="SCL"
             implementationClass="com.scl.plugin.folding.SclFoldingBuilder"/>
 
-        <!-- ── Commenter (Ctrl+/ e Ctrl+Shift+/) ────────────────────
-             Fase 2: // para linha, (* *) para bloco.
-             ──────────────────────────────────────────────────────── -->
+        <!-- ── Commenter ─────────────────────────────────────────────────
+             Ctrl+/ para linha (//), Ctrl+Shift+/ para bloco (* *).
+             ──────────────────────────────────────────────────────────── -->
         <lang.commenter
             language="SCL"
             implementationClass="com.scl.plugin.SclCommenter"/>
 
-        <!-- ── Completion ────────────────────────────────────────────────
-             Implementado na Fase 3
+        <!-- ── Completion Contributor ────────────────────────────────────
+             Palavras-chave, tipos, constantes em qualquer posicao SCL.
+             dumbAware="true": funciona durante indexacao do projeto.
              ──────────────────────────────────────────────────────────── -->
-        <!--
         <completion.contributor
             language="SCL"
-            implementationClass="com.scl.plugin.completion.SclCompletionContributor"/>
-        -->
+            implementationClass="com.scl.plugin.completion.SclCompletionContributor"
+            order="first"/>
+
+        <!-- ── Live Template Context ─────────────────────────────────────
+             Ativa os templates de SCL.xml em arquivos .scl.
+             contextId deve coincidir com o ID em SclTemplateContext.
+             ──────────────────────────────────────────────────────────── -->
+        <liveTemplateContext
+            implementation="com.scl.plugin.completion.SclTemplateContext"
+            contextId="SCL"/>
+
+        <!-- ── Live Templates ────────────────────────────────────────────
+             if, ife, case, for, while, repeat, fb, var, region, ton.
+             ──────────────────────────────────────────────────────────── -->
+        <defaultLiveTemplates file="/liveTemplates/SCL.xml"/>
 
     </extensions>
 

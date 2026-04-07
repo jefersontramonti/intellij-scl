@@ -1,0 +1,111 @@
+<templateSet group="SCL">
+
+  <!-- ── IF ────────────────────────────────────────────────────────────── -->
+  <template name="if"
+            value="IF $COND$ THEN&#10;    $END$&#10;END_IF;"
+            description="IF … THEN … END_IF"
+            toReformat="true"
+            toShortenFQNames="true">
+    <variable name="COND" expression="" defaultValue="&quot;condition&quot;" alwaysStopAt="true"/>
+    <context><option name="SCL" value="true"/></context>
+  </template>
+
+  <!-- ── IF / ELSE ──────────────────────────────────────────────────────── -->
+  <template name="ife"
+            value="IF $COND$ THEN&#10;    $THEN$&#10;ELSE&#10;    $ELSE$&#10;END_IF;"
+            description="IF … THEN … ELSE … END_IF"
+            toReformat="true"
+            toShortenFQNames="true">
+    <variable name="COND" expression="" defaultValue="&quot;condition&quot;" alwaysStopAt="true"/>
+    <variable name="THEN" expression="" defaultValue="" alwaysStopAt="true"/>
+    <variable name="ELSE" expression="" defaultValue="" alwaysStopAt="true"/>
+    <context><option name="SCL" value="true"/></context>
+  </template>
+
+  <!-- ── CASE ──────────────────────────────────────────────────────────── -->
+  <template name="case"
+            value="CASE $EXPR$ OF&#10;    $VAL$:&#10;        $END$&#10;    ELSE:&#10;        ;&#10;END_CASE;"
+            description="CASE … OF … END_CASE"
+            toReformat="true"
+            toShortenFQNames="true">
+    <variable name="EXPR" expression="" defaultValue="&quot;expr&quot;" alwaysStopAt="true"/>
+    <variable name="VAL"  expression="" defaultValue="1"              alwaysStopAt="true"/>
+    <context><option name="SCL" value="true"/></context>
+  </template>
+
+  <!-- ── FOR ───────────────────────────────────────────────────────────── -->
+  <template name="for"
+            value="FOR $VAR$ := $FROM$ TO $TO$ DO&#10;    $END$&#10;END_FOR;"
+            description="FOR … TO … DO … END_FOR"
+            toReformat="true"
+            toShortenFQNames="true">
+    <variable name="VAR"  expression="" defaultValue="i"  alwaysStopAt="true"/>
+    <variable name="FROM" expression="" defaultValue="1"  alwaysStopAt="true"/>
+    <variable name="TO"   expression="" defaultValue="10" alwaysStopAt="true"/>
+    <context><option name="SCL" value="true"/></context>
+  </template>
+
+  <!-- ── WHILE ─────────────────────────────────────────────────────────── -->
+  <template name="while"
+            value="WHILE $COND$ DO&#10;    $END$&#10;END_WHILE;"
+            description="WHILE … DO … END_WHILE"
+            toReformat="true"
+            toShortenFQNames="true">
+    <variable name="COND" expression="" defaultValue="&quot;condition&quot;" alwaysStopAt="true"/>
+    <context><option name="SCL" value="true"/></context>
+  </template>
+
+  <!-- ── REPEAT ────────────────────────────────────────────────────────── -->
+  <template name="repeat"
+            value="REPEAT&#10;    $END$&#10;UNTIL $COND$;&#10;END_REPEAT;"
+            description="REPEAT … UNTIL … END_REPEAT"
+            toReformat="true"
+            toShortenFQNames="true">
+    <variable name="COND" expression="" defaultValue="&quot;condition&quot;" alwaysStopAt="true"/>
+    <context><option name="SCL" value="true"/></context>
+  </template>
+
+  <!-- ── FUNCTION_BLOCK ─────────────────────────────────────────────────── -->
+  <template name="fb"
+            value="FUNCTION_BLOCK $NAME$&#10;{ S7_Optimized_Access := 'TRUE' }&#10;VAR_INPUT&#10;    $END$&#10;END_VAR&#10;&#10;BEGIN&#10;&#10;END_FUNCTION_BLOCK"
+            description="FUNCTION_BLOCK … END_FUNCTION_BLOCK"
+            toReformat="true"
+            toShortenFQNames="true">
+    <variable name="NAME" expression="" defaultValue="&quot;FB_Name&quot;" alwaysStopAt="true"/>
+    <context><option name="SCL" value="true"/></context>
+  </template>
+
+  <!-- ── VAR section ───────────────────────────────────────────────────── -->
+  <template name="var"
+            value="VAR&#10;    $NAME$ : $TYPE$;&#10;END_VAR"
+            description="VAR … END_VAR"
+            toReformat="true"
+            toShortenFQNames="true">
+    <variable name="NAME" expression="" defaultValue="variable" alwaysStopAt="true"/>
+    <variable name="TYPE" expression="" defaultValue="BOOL"     alwaysStopAt="true"/>
+    <context><option name="SCL" value="true"/></context>
+  </template>
+
+  <!-- ── REGION ────────────────────────────────────────────────────────── -->
+  <template name="region"
+            value="REGION $NAME$&#10;    $END$&#10;END_REGION"
+            description="REGION … END_REGION (TIA Portal)"
+            toReformat="true"
+            toShortenFQNames="true">
+    <variable name="NAME" expression="" defaultValue="Section" alwaysStopAt="true"/>
+    <context><option name="SCL" value="true"/></context>
+  </template>
+
+  <!-- ── TON Timer call ────────────────────────────────────────────────── -->
+  <template name="ton"
+            value="$INST$(IN := $IN$, PT := $PT$);"
+            description="TON timer instance call"
+            toReformat="false"
+            toShortenFQNames="true">
+    <variable name="INST" expression="" defaultValue="tTimer"   alwaysStopAt="true"/>
+    <variable name="IN"   expression="" defaultValue="xEnable"  alwaysStopAt="true"/>
+    <variable name="PT"   expression="" defaultValue="T#1S"     alwaysStopAt="true"/>
+    <context><option name="SCL" value="true"/></context>
+  </template>
+
+</templateSet>
