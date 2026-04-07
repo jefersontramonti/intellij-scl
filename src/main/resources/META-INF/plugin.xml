@@ -1,0 +1,95 @@
+<!-- ─────────────────────────────────────────────────────────────────────────
+     plugin.xml — Manifesto do plugin SCL Language Support
+     Todos os extension points verificados contra:
+     https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html
+     ───────────────────────────────────────────────────────────────────────── -->
+<idea-plugin>
+
+    <!-- ID unico do plugin no JetBrains Marketplace -->
+    <id>com.scl.plugin.scl-language-support</id>
+    <name>SCL Language Support</name>
+    <vendor>SCL Plugin</vendor>
+
+    <description><![CDATA[
+        Suporte completo a linguagem SCL (Structured Control Language) para
+        Siemens TIA Portal V19 no IntelliJ IDEA.<br/><br/>
+        <b>Fase 1 — Fundacao:</b><br/>
+        <ul>
+          <li>Syntax Highlighting para todos os tokens SCL</li>
+          <li>Reconhecimento de arquivos .scl</li>
+          <li>Suporte a comentarios de linha (//) e bloco (* ... *)</li>
+          <li>Highlighting de acesso direto a memoria (%M, %I, %Q)</li>
+        </ul>
+    ]]></description>
+
+    <!-- Dependencia minima: modulo platform (Community e Ultimate) -->
+    <!-- Nao adicionar dependencia de Java para manter compatibilidade com Community -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+
+        <!-- ── Tipo de arquivo .scl ──────────────────────────────────────
+             fieldName="INSTANCE" e OBRIGATORIO — referencia o campo estatico
+             na classe SclFileType.
+             Fonte: https://plugins.jetbrains.com/docs/intellij/language-and-filetype.html
+             "Register the LanguageFileType with the IntelliJ Platform"
+             ──────────────────────────────────────────────────────────── -->
+        <fileType
+            name="SCL File"
+            implementationClass="com.scl.plugin.language.SclFileType"
+            fieldName="INSTANCE"
+            language="SCL"
+            extensions="scl;SCL"/>
+
+        <!-- ── Parser Definition ────────────────────────────────────────
+             Ponto central: conecta Language → Lexer → Parser → PSI
+             ──────────────────────────────────────────────────────────── -->
+        <lang.parserDefinition
+            language="SCL"
+            implementationClass="com.scl.plugin.parser.SclParserDefinition"/>
+
+        <!-- ── Syntax Highlighting ──────────────────────────────────────
+             SyntaxHighlighterFactory e o padrao para 2023.1+
+             Fonte: https://plugins.jetbrains.com/docs/intellij/syntax-highlighter-and-color-settings-page.html
+             ──────────────────────────────────────────────────────────── -->
+        <lang.syntaxHighlighterFactory
+            language="SCL"
+            implementationClass="com.scl.plugin.highlighting.SclSyntaxHighlighterFactory"/>
+
+        <!-- ── Color Settings Page ──────────────────────────────────────
+             Aparece em: Settings > Editor > Color Scheme > SCL
+             Permite ao usuario customizar as cores do highlighting
+             (implementado na Fase 3)
+             ──────────────────────────────────────────────────────────── -->
+        <!--
+        <colorSettingsPage
+            implementation="com.scl.plugin.highlighting.SclColorSettingsPage"/>
+        -->
+
+        <!-- ── Code Folding ────────────────────────────────────────────
+             Fase 2: recolhe FUNCTION_BLOCK, FUNCTION, VAR, IF, FOR,
+             WHILE, CASE, REPEAT e comentarios de bloco longos.
+             ──────────────────────────────────────────────────────── -->
+        <lang.foldingBuilder
+            language="SCL"
+            implementationClass="com.scl.plugin.folding.SclFoldingBuilder"/>
+
+        <!-- ── Commenter (Ctrl+/ e Ctrl+Shift+/) ────────────────────
+             Fase 2: // para linha, (* *) para bloco.
+             ──────────────────────────────────────────────────────── -->
+        <lang.commenter
+            language="SCL"
+            implementationClass="com.scl.plugin.SclCommenter"/>
+
+        <!-- ── Completion ────────────────────────────────────────────────
+             Implementado na Fase 3
+             ──────────────────────────────────────────────────────────── -->
+        <!--
+        <completion.contributor
+            language="SCL"
+            implementationClass="com.scl.plugin.completion.SclCompletionContributor"/>
+        -->
+
+    </extensions>
+
+</idea-plugin>

@@ -1,0 +1,71 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// FB_TankControl.scl — Arquivo de teste para o plugin SCL
+// Abre este arquivo no IntelliJ apos instalar o plugin para ver o highlighting
+// ─────────────────────────────────────────────────────────────────────────────
+
+FUNCTION_BLOCK FB_TankControl
+VAR_INPUT
+    xStart      : BOOL;    // Comando de inicio
+    xStop       : BOOL;    // Comando de parada
+    rSetpoint   : REAL;    // Setpoint de nivel (0.0 a 10.0)
+END_VAR
+
+VAR_OUTPUT
+    xRunning    : BOOL;    // Status: em execucao
+    xFault      : BOOL;    // Status: falha
+END_VAR
+
+VAR_STATIC
+    s_State     : INT;     // Estado atual da FSM
+    rLevel      : REAL;    // Nivel atual do tanque
+    tFillTimer  : TON;     // Timer de enchimento
+END_VAR
+
+VAR_TEMP
+    tElapsed    : TIME;    // Tempo decorrido (temporaria)
+END_VAR
+
+(* ─── Logica principal — FSM de 3 estados ─────────────────────────────── *)
+CASE s_State OF
+
+    0: // IDLE — aguardando comando
+        xRunning := FALSE;
+        IF xStart THEN
+            s_State := 1;
+        END_IF;
+
+    1: // RUNNING — enchendo tanque
+        xRunning := TRUE;
+
+        // Acionar timer de seguranca
+        tFillTimer(IN := TRUE, PT := T#30S);
+
+        IF rLevel >= rSetpoint THEN
+            s_State := 2; // nivel atingido
+        ELSIF tFillTimer.Q THEN
+            xFault  := TRUE;
+            s_State := 99; // timeout — falha
+        END_IF;
+
+        IF xStop THEN
+            tFillTimer(IN := FALSE);
+            s_State := 0;
+        END_IF;
+
+    2: // DONE — nivel atingido
+        xRunning := FALSE;
+        tFillTimer(IN := FALSE);
+        IF xStop OR NOT xStart THEN
+            s_State := 0;
+        END_IF;
+
+    99: // FAULT — falha detectada
+        xRunning := FALSE;
+        IF xStop THEN
+            xFault  := FALSE;
+            s_State := 0;
+        END_IF;
+
+END_CASE;
+
+END_FUNCTION_BLOCK

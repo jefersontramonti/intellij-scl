@@ -1,0 +1,520 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Scl.bnf — Gramatica Grammar-Kit para SCL (Structured Control Language)
+// Siemens SCLV4 (S7-300/400) + TIA Portal V19
+//
+// Gera em src/main/gen:
+//   com/scl/plugin/parser/SclParser.java
+//   com/scl/plugin/psi/SclTypes.java
+//   com/scl/plugin/psi/Scl*.java  (interfaces PSI)
+//   com/scl/plugin/psi/impl/Scl*Impl.java (implementacoes PSI)
+//
+// Referencias:
+//   Apendice B (Lexical Rules) + Apendice C (Syntax Rules) do SCLV4
+//   Creating SCL Programs — TIA Portal V19 (11/2025)
+//   https://plugins.jetbrains.com/docs/intellij/grammar-and-parser.html
+// ─────────────────────────────────────────────────────────────────────────────
+
+{
+  parserClass          = "com.scl.plugin.parser.SclParser"
+  extends              = "com.intellij.extapi.psi.ASTWrapperPsiElement"
+
+  psiClassPrefix       = "Scl"
+  psiImplClassSuffix   = "Impl"
+  psiPackage           = "com.scl.plugin.psi"
+  psiImplPackage       = "com.scl.plugin.psi.impl"
+
+  elementTypeHolderClass = "com.scl.plugin.psi.SclTypes"
+  elementTypeClass       = "com.scl.plugin.psi.SclElementType"
+  tokenTypeClass         = "com.scl.plugin.psi.SclTokenType"
+
+  tokens = [
+    // ── Blocos ────────────────────────────────────────────────────────────
+    FUNCTION_BLOCK         = 'FUNCTION_BLOCK'
+    END_FUNCTION_BLOCK     = 'END_FUNCTION_BLOCK'
+    FUNCTION               = 'FUNCTION'
+    END_FUNCTION           = 'END_FUNCTION'
+    ORGANIZATION_BLOCK     = 'ORGANIZATION_BLOCK'
+    END_ORGANIZATION_BLOCK = 'END_ORGANIZATION_BLOCK'
+    DATA_BLOCK             = 'DATA_BLOCK'
+    END_DATA_BLOCK         = 'END_DATA_BLOCK'
+    TYPE                   = 'TYPE'
+    END_TYPE               = 'END_TYPE'
+    STRUCT                 = 'STRUCT'
+    END_STRUCT             = 'END_STRUCT'
+    BEGIN                  = 'BEGIN'
+
+    // ── Secoes de variaveis ───────────────────────────────────────────────
+    VAR          = 'VAR'
+    VAR_INPUT    = 'VAR_INPUT'
+    VAR_OUTPUT   = 'VAR_OUTPUT'
+    VAR_IN_OUT   = 'VAR_IN_OUT'
+    VAR_STATIC   = 'VAR_STATIC'
+    VAR_TEMP     = 'VAR_TEMP'
+    VAR_CONSTANT = 'VAR_CONSTANT'
+    END_VAR      = 'END_VAR'
+
+    // ── Secao de constantes (SCLV4 Apendice C.2) ─────────────────────────
+    CONST     = 'CONST'
+    END_CONST = 'END_CONST'
+
+    // ── Secao de labels de salto (SCLV4 Sec.15.9 + Apendice C.2) ─────────
+    LABEL     = 'LABEL'
+    END_LABEL = 'END_LABEL'
+
+    // ── Regioes TIA Portal ────────────────────────────────────────────────
+    REGION     = 'REGION'
+    END_REGION = 'END_REGION'
+
+    // ── Controle de fluxo ─────────────────────────────────────────────────
+    IF         = 'IF'
+    THEN       = 'THEN'
+    ELSIF      = 'ELSIF'
+    ELSE       = 'ELSE'
+    END_IF     = 'END_IF'
+    CASE       = 'CASE'
+    OF         = 'OF'
+    END_CASE   = 'END_CASE'
+    FOR        = 'FOR'
+    TO         = 'TO'
+    BY         = 'BY'
+    DO         = 'DO'
+    END_FOR    = 'END_FOR'
+    WHILE      = 'WHILE'
+    END_WHILE  = 'END_WHILE'
+    REPEAT     = 'REPEAT'
+    UNTIL      = 'UNTIL'
+    END_REPEAT = 'END_REPEAT'
+    RETURN     = 'RETURN'
+    EXIT       = 'EXIT'
+    CONTINUE   = 'CONTINUE'
+    GOTO       = 'GOTO'
+
+    // ── Operadores logicos e aritmeticos ──────────────────────────────────
+    AND       = 'AND'
+    OR        = 'OR'
+    NOT       = 'NOT'
+    XOR       = 'XOR'
+    MOD       = 'MOD'
+    DIV       = 'DIV'   // divisao inteira (prioridade 4, igual a *)
+    AMPERSAND = '&'     // operador AND alternativo (TIA Portal)
+
+    // ── Tipos de dados elementares ────────────────────────────────────────
+    TYPE_BOOL   = 'BOOL'
+    TYPE_BYTE   = 'BYTE'
+    TYPE_WORD   = 'WORD'
+    TYPE_DWORD  = 'DWORD'
+    TYPE_LWORD  = 'LWORD'
+    TYPE_INT    = 'INT'
+    TYPE_UINT   = 'UINT'
+    TYPE_DINT   = 'DINT'
+    TYPE_UDINT  = 'UDINT'
+    TYPE_LINT   = 'LINT'
+    TYPE_ULINT  = 'ULINT'
+    TYPE_REAL   = 'REAL'
+    TYPE_LREAL  = 'LREAL'
+    TYPE_CHAR   = 'CHAR'
+    TYPE_STRING = 'STRING'
+    TYPE_TIME   = 'TIME'
+    TYPE_DATE   = 'DATE'
+    TYPE_TOD    = 'TOD'
+    TYPE_DTL    = 'DTL'
+    // SCLV4 + TIA Portal time types
+    TYPE_S5TIME        = 'S5TIME'
+    TYPE_DATE_AND_TIME = 'DATE_AND_TIME'  // alias DT# no lexer
+
+    // ── Tipos de dados compostos / Timers / Contadores Siemens ────────────
+    TYPE_TON  = 'TON'
+    TYPE_TOF  = 'TOF'
+    TYPE_TP   = 'TP'
+    TYPE_TONR = 'TONR'
+    TYPE_CTU  = 'CTU'
+    TYPE_CTD  = 'CTD'
+    TYPE_CTUD = 'CTUD'
+
+    // ── ARRAY ─────────────────────────────────────────────────────────────
+    ARRAY = 'ARRAY'     // ARRAY[x..y] OF tipo
+
+    // ── Tipos de parametro (SCLV4 Apendice C.3 — Parameter Data Type) ────
+    TIMER    = 'TIMER'
+    COUNTER  = 'COUNTER'
+    POINTER  = 'POINTER'
+    ANY      = 'ANY'
+    BLOCK_FB  = 'BLOCK_FB'
+    BLOCK_FC  = 'BLOCK_FC'
+    BLOCK_DB  = 'BLOCK_DB'
+    BLOCK_SDB = 'BLOCK_SDB'
+    BLOCK_SFB = 'BLOCK_SFB'
+    BLOCK_SFC = 'BLOCK_SFC'
+
+    // ── Palavras reservadas adicionais ────────────────────────────────────
+    VOID = 'VOID'   // tipo de retorno de funcoes sem valor
+    NIL  = 'NIL'    // ponteiro nulo
+    EN   = 'EN'     // Enable flag
+    ENO  = 'ENO'    // Enable Output flag
+    OK   = 'OK'     // status de operacao
+
+    // ── Literais ──────────────────────────────────────────────────────────
+    BOOL_LITERAL    = 'bool'
+    INTEGER_LITERAL = 'int'
+    REAL_LITERAL    = 'real'
+    STRING_LITERAL  = 'str'
+    TIME_LITERAL    = 'time'
+
+    // ── TIA Portal: identificadores especiais ─────────────────────────────
+    QUOTED_IDENTIFIER = 'quoted_id'   // "TagName" — global tag TIA Portal
+    LOCAL_VAR_ID      = 'local_var'   // #varName — variavel local TIA Portal
+
+    // ── Comentarios ───────────────────────────────────────────────────────
+    LINE_COMMENT  = '//'
+    BLOCK_COMMENT = '(*)'
+
+    // ── Operadores de atribuicao ──────────────────────────────────────────
+    ASSIGN          = ':='
+    PLUS_ASSIGN     = '+='    // atribuicao combinada TIA Portal
+    MINUS_ASSIGN    = '-='
+    MULTIPLY_ASSIGN = '*='
+    DIVIDE_ASSIGN   = '/='
+    OUTPUT_ASSIGN   = '=>'    // param saida em chamada TIA Portal: QU => var
+
+    // ── Pontuacao e operadores aritmeticos / relacionais ──────────────────
+    SEMICOLON = ';'
+    COLON     = ':'
+    DOT       = '.'
+    DOTDOT    = '..'
+    COMMA     = ','
+    LPAREN    = '('
+    RPAREN    = ')'
+    LBRACKET  = '['
+    RBRACKET  = ']'
+    PLUS      = '+'
+    MINUS     = '-'
+    MULTIPLY  = '*'
+    DIVIDE    = '/'
+    POWER     = '**'
+    EQ        = '='
+    NEQ       = '<>'
+    LT        = '<'
+    GT        = '>'
+    LEQ       = '<='
+    GEQ       = '>='
+
+    // ── Identificadores e acesso a memoria Siemens ────────────────────────
+    IDENTIFIER    = 'id'
+    MEMORY_ACCESS = '%address'
+  ]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Regra raiz
+// ─────────────────────────────────────────────────────────────────────────────
+
+sclFile ::= topLevelDecl*
+
+topLevelDecl ::= functionBlockDecl
+               | functionDecl
+               | orgBlockDecl
+               | dataBlockDecl
+               | typeDecl
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Declaracoes de bloco
+// Apendice C.1: Structure of SCL Source Files
+//
+// blockName: nome do bloco — identificador simples ou nome entre aspas duplas.
+// TIA Portal permite nomes entre aspas: FUNCTION_BLOCK "FB_Diagnostic"
+// O lexer retorna QUOTED_IDENTIFIER para "Nome" (tag global / nome simbolico).
+// ─────────────────────────────────────────────────────────────────────────────
+
+// private: nao gera PSI node proprio — inline nas regras de bloco
+private blockName ::= IDENTIFIER | QUOTED_IDENTIFIER
+
+// FB Declaration Section: Constants? Labels? Temp? Static? Parameters?
+functionBlockDecl ::= FUNCTION_BLOCK blockName
+                      constSection?
+                      labelSection?
+                      varSection*
+                      BEGIN statementList
+                      END_FUNCTION_BLOCK {
+  pin=1
+}
+
+// FC Declaration Section: Constants? Labels? Temp? Parameters?
+// Retorno pode ser tipo de dados ou VOID (Apendice C.1)
+functionDecl ::= FUNCTION blockName COLON (VOID | typeRef)
+                 constSection?
+                 labelSection?
+                 varSection*
+                 BEGIN statementList
+                 END_FUNCTION {
+  pin=1
+}
+
+// OB Declaration Section: Constants? Labels? Temp?
+orgBlockDecl ::= ORGANIZATION_BLOCK blockName
+                 constSection?
+                 labelSection?
+                 varSection*
+                 BEGIN statementList
+                 END_ORGANIZATION_BLOCK {
+  pin=1
+}
+
+// DB Declaration Section: pode ser Interface (varSection), STRUCT ou UDT ref
+// BEGIN inicia secao de atribuicoes (inicializadores)
+dataBlockDecl ::= DATA_BLOCK blockName
+                  (varSection | structDecl)*
+                  (BEGIN dbAssignList)?
+                  END_DATA_BLOCK {
+  pin=1
+}
+
+// Secao de atribuicoes do DB: IDENTIFIER := expr ;
+dbAssignList ::= dbAssign*
+dbAssign     ::= IDENTIFIER ASSIGN expression SEMICOLON
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Secao CONST (SCLV4 Apendice C.2 — Constant Subsection)
+// CONST
+//   MAX_VAL := 100;
+//   MIN_VAL : INT := 0;  (com tipo opcional — TIA Portal)
+// END_CONST
+// ─────────────────────────────────────────────────────────────────────────────
+
+constSection ::= CONST constDecl* END_CONST {
+  pin=1
+}
+
+constDecl ::= IDENTIFIER (COLON typeRef)? ASSIGN expression SEMICOLON
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Secao LABEL (SCLV4 Sec. 15.9 + Apendice C.2 — Jump Label Subsection)
+// LABEL
+//   LABEL1, LABEL2, LABEL3;
+// END_LABEL
+// ─────────────────────────────────────────────────────────────────────────────
+
+labelSection ::= LABEL IDENTIFIER (COMMA IDENTIFIER)* SEMICOLON END_LABEL {
+  pin=1
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Declaracoes de tipo (TYPE ... END_TYPE)
+// ─────────────────────────────────────────────────────────────────────────────
+
+typeDecl ::= TYPE typeDef* END_TYPE {
+  pin=1
+}
+
+typeDef ::= blockName COLON ( structDecl | typeRef SEMICOLON ) {
+  pin=1
+}
+
+structDecl ::= STRUCT structField* END_STRUCT {
+  pin=1
+}
+
+structField ::= IDENTIFIER COLON typeRef ( ASSIGN expression )? SEMICOLON
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Secoes de variaveis
+// ─────────────────────────────────────────────────────────────────────────────
+
+varSection ::= varKeyword varDecl* END_VAR {
+  pin=1
+}
+
+private varKeyword ::= VAR | VAR_INPUT | VAR_OUTPUT | VAR_IN_OUT | VAR_STATIC | VAR_TEMP | VAR_CONSTANT
+
+// Declaracao de variavel: pode ser simples ou instancia de FB local
+varDecl ::= IDENTIFIER COLON typeRef ( ASSIGN expression )? SEMICOLON
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Referencia de tipo
+// Apendice C.3: Data Types in SCL
+// ─────────────────────────────────────────────────────────────────────────────
+
+typeRef ::= arrayTypeRef | stringTypeRef | paramTypeRef | builtinType | IDENTIFIER
+
+// ARRAY[x..y] OF tipo — ate 6 dimensoes (SCLV4 Apendice C.3)
+arrayTypeRef ::= ARRAY LBRACKET arrayDimension (COMMA arrayDimension)* RBRACKET OF typeRef {
+  pin=1
+}
+
+arrayDimension ::= expression DOTDOT expression
+
+// STRING com tamanho opcional: STRING ou STRING[254]
+stringTypeRef ::= TYPE_STRING ( LBRACKET expression RBRACKET )?
+
+// Tipos de parametro especiais (SCLV4 — Parameter Data Type Specification)
+private paramTypeRef ::= TIMER | COUNTER | POINTER | ANY
+                       | BLOCK_FB | BLOCK_FC | BLOCK_DB | BLOCK_SDB | BLOCK_SFB | BLOCK_SFC
+
+private builtinType ::= TYPE_BOOL | TYPE_BYTE | TYPE_WORD | TYPE_DWORD | TYPE_LWORD
+                      | TYPE_INT   | TYPE_UINT  | TYPE_DINT  | TYPE_UDINT
+                      | TYPE_LINT  | TYPE_ULINT
+                      | TYPE_REAL  | TYPE_LREAL
+                      | TYPE_CHAR
+                      | TYPE_TIME  | TYPE_DATE  | TYPE_TOD   | TYPE_DTL
+                      | TYPE_S5TIME | TYPE_DATE_AND_TIME
+                      | TYPE_TON   | TYPE_TOF   | TYPE_TP    | TYPE_TONR
+                      | TYPE_CTU   | TYPE_CTD   | TYPE_CTUD
+                      | VOID
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Statements (Apendice C.4 — Code Section)
+// ─────────────────────────────────────────────────────────────────────────────
+
+statementList ::= statement*
+
+// Ordem das alternativas e importante para o parser PEG:
+// - Blocos de controle com palavra-chave propria primeiro (sem ambiguidade)
+// - assignStmt e callStmt antes de labeledStmt (ambos comecam com IDENTIFIER)
+// - labeledStmt antes de SEMICOLON vazio (evita consumir ':' incorretamente)
+statement ::= ifStatement
+            | caseStatement
+            | forStatement
+            | whileStatement
+            | repeatStatement
+            | returnStmt    SEMICOLON
+            | exitStmt      SEMICOLON
+            | continueStmt  SEMICOLON
+            | gotoStmt      SEMICOLON
+            | regionStmt
+            | assignStmt    SEMICOLON
+            | callStmt      SEMICOLON
+            | labeledStmt
+            | SEMICOLON
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Statements simples
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Atribuicao simples e combinada (TIA Portal: +=, -=, *=, /=)
+// pin=2: compromete apos ver o operador de atribuicao
+assignStmt ::= lvalue (ASSIGN | PLUS_ASSIGN | MINUS_ASSIGN | MULTIPLY_ASSIGN | DIVIDE_ASSIGN) expression {
+  pin=2
+}
+
+// Chamada de funcao/FB como statement (sem retorno capturado)
+callStmt ::= qualifiedName LPAREN argList? RPAREN
+
+returnStmt   ::= RETURN
+exitStmt     ::= EXIT
+continueStmt ::= CONTINUE
+
+// GOTO label; (SCLV4 Sec. 15.9)
+gotoStmt ::= GOTO IDENTIFIER {
+  pin=1
+}
+
+// REGION nome_opcional codigo END_REGION (TIA Portal)
+// O nome e opcional; END_REGION pode ser seguido de comentario (ignorado pelo lexer)
+regionStmt ::= REGION IDENTIFIER? statementList END_REGION {
+  pin=1
+}
+
+// LABEL1: statement (rotulo inline — SCLV4 Apendice C.4)
+// LABEL3: ;  (rotulo em instrucao vazia — usa alternativa SEMICOLON de statement)
+// pin=2: compromete apos ver IDENTIFIER + COLON
+labeledStmt ::= IDENTIFIER COLON statement {
+  pin=2
+}
+
+// lvalue: lado esquerdo de atribuicao — sem chamada de funcao
+private lvalue ::= ( IDENTIFIER | MEMORY_ACCESS | QUOTED_IDENTIFIER | LOCAL_VAR_ID ) lvalueSuffix*
+private lvalueSuffix ::= DOT IDENTIFIER | LBRACKET expression RBRACKET
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Controle de fluxo — geram PSI nodes para FoldingBuilder
+// ─────────────────────────────────────────────────────────────────────────────
+
+ifStatement ::= IF expression THEN statementList elsifClause* elseClause? END_IF {
+  pin=1
+}
+
+elsifClause ::= ELSIF expression THEN statementList { pin=1 }
+elseClause  ::= ELSE statementList { pin=1 }
+
+caseStatement ::= CASE expression OF caseAlt* caseElseClause? END_CASE {
+  pin=1
+}
+
+caseAlt        ::= caseLabel ( COMMA caseLabel )* COLON statementList
+caseLabel      ::= expression ( DOTDOT expression )?
+caseElseClause ::= ELSE statementList { pin=1 }
+
+forStatement ::= FOR IDENTIFIER ASSIGN expression TO expression ( BY expression )? DO statementList END_FOR {
+  pin=1
+}
+
+whileStatement ::= WHILE expression DO statementList END_WHILE {
+  pin=1
+}
+
+repeatStatement ::= REPEAT statementList UNTIL expression SEMICOLON? END_REPEAT {
+  pin=1
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Argumentos de chamada de funcao / FB
+// Apendice C.6: Function and Function Block Calls
+//
+// Input assignment:  param := value
+// Output assignment: param => variable  (TIA Portal)
+// Posicional:        expression (FC sem nome de parametro)
+// ─────────────────────────────────────────────────────────────────────────────
+
+argList  ::= argument ( COMMA argument )*
+argument ::= namedArg | expression
+
+// namedArg deve vir antes de expression (ambos podem comecar com IDENTIFIER)
+// pin=2: apos ver IDENTIFIER + operador de atribuicao, compromete com namedArg
+private namedArg ::= IDENTIFIER (ASSIGN | OUTPUT_ASSIGN) expression { pin=2 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Expressoes — hierarquia de precedencia sem recursao a esquerda
+// SCLV4 Sec. 13.1 / TIA Portal Sec. 1.1.6:
+//   1: ()
+//   2: **  (potenciacao)
+//   3: +/- unario, NOT
+//   4: *, /, DIV, MOD
+//   5: +, -
+//   6: <, >, <=, >=
+//   7: =, <>
+//   8: AND, &
+//   9: XOR
+//  10: OR
+//  11: := (atribuicao — tratada separadamente em assignStmt)
+// ─────────────────────────────────────────────────────────────────────────────
+
+expression ::= orExpr
+
+private orExpr    ::= xorExpr ( OR  xorExpr )*
+private xorExpr   ::= andExpr ( XOR andExpr )*
+private andExpr   ::= notExpr ( (AND | AMPERSAND) notExpr )*   // AND e & equivalentes
+private notExpr   ::= NOT notExpr | compExpr
+private compExpr  ::= relExpr ( ( EQ | NEQ ) relExpr )?
+private relExpr   ::= addExpr ( ( LT | GT | LEQ | GEQ ) addExpr )?
+private addExpr   ::= mulExpr  ( ( PLUS  | MINUS  ) mulExpr  )*
+private mulExpr   ::= powerExpr ( ( MULTIPLY | DIVIDE | DIV | MOD ) powerExpr )*  // DIV = divisao inteira
+private powerExpr ::= unaryExpr ( POWER unaryExpr )?
+private unaryExpr ::= ( MINUS | PLUS ) unaryExpr | primaryExpr
+
+private primaryExpr ::= INTEGER_LITERAL
+                      | REAL_LITERAL
+                      | STRING_LITERAL
+                      | BOOL_LITERAL
+                      | TIME_LITERAL
+                      | MEMORY_ACCESS
+                      | QUOTED_IDENTIFIER       // "TagName" — TIA Portal global tag
+                      | LOCAL_VAR_ID            // #varName — TIA Portal local variable
+                      | NIL                     // ponteiro nulo
+                      | EN | ENO | OK           // flags predefinidas
+                      | LPAREN expression RPAREN
+                      | nameCallExpr
+
+// Identificador simples, acesso a membro, chamada de funcao ou acesso a array
+// A parte LPAREN e opcional: cobre tanto ref (foo.bar) quanto call (foo.bar(args))
+// Tambem cobre: FB10.DB20(params) — chamada global de FB
+private qualifiedName ::= IDENTIFIER ( DOT IDENTIFIER )*
+private nameCallExpr  ::= qualifiedName ( LPAREN argList? RPAREN )? ( LBRACKET expression RBRACKET )*
