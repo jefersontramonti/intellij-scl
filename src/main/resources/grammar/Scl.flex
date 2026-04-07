@@ -40,13 +40,17 @@ import com.scl.plugin.psi.SclTypes;
 /* ── Comentarios ────────────────────────────────────────────────────────── */
 "//"[^\r\n]*                  { return SclTypes.LINE_COMMENT; }
 
-"(*"                          { yybegin(BLOCK_COMMENT_STATE); }
+/* (* ... *) — padrao IntelliJ para block comments:
+   CADA caractere retorna BLOCK_COMMENT. A plataforma mescla tokens
+   adjacentes do mesmo tipo em um unico elemento PSI. Isso garante que
+   o interior do comentario NUNCA seja tokenizado como SCL.
+   Sem esse return no "(*", o conteudo escapava para o estado YYINITIAL
+   e era tokenizado como keywords/identifiers normais. */
+"(*"                          { yybegin(BLOCK_COMMENT_STATE); return SclTypes.BLOCK_COMMENT; }
 <BLOCK_COMMENT_STATE> {
     "*)"                      { yybegin(YYINITIAL); return SclTypes.BLOCK_COMMENT; }
-    [^*\n]+                   { /* acumulando corpo do comentario */ }
-    "*"                       { /* asterisco isolado dentro do comentario */ }
-    \n                        { /* nova linha dentro do comentario */ }
     <<EOF>>                   { yybegin(YYINITIAL); return SclTypes.BLOCK_COMMENT; }
+    [^]                       { return SclTypes.BLOCK_COMMENT; }
 }
 
 /* ── Literais tipados (devem vir ANTES das palavras-chave para que         ── */

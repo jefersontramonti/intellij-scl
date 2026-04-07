@@ -4,6 +4,7 @@ import com.intellij.codeInsight.completion.*
 import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.openapi.project.DumbAware
 import com.intellij.patterns.PlatformPatterns
+import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiElement
 import com.intellij.util.ProcessingContext
 import com.scl.plugin.language.SclLanguage
@@ -162,19 +163,12 @@ private object SclKeywordCompletionProvider : CompletionProvider<CompletionParam
         context: ProcessingContext,
         result: CompletionResultSet,
     ) {
-        // Verificacao imperativa: cobre tanto o token direto quanto o elemento
-        // pai (ex: texto digitado dentro de um BLOCK_COMMENT cria um filho do
-        // no de comentario — o PlatformPatterns sozinho nao captura esse caso).
-        val element     = parameters.position
-        val elementType = element.node?.elementType
-        val parentType  = element.parent?.node?.elementType
-
-        if (elementType == SclTypes.LINE_COMMENT   ||
-            elementType == SclTypes.BLOCK_COMMENT  ||
-            elementType == SclTypes.STRING_LITERAL ||
-            parentType  == SclTypes.LINE_COMMENT   ||
-            parentType  == SclTypes.BLOCK_COMMENT
-        ) return
+        // Sobe a arvore PSI ate encontrar um no de comentario ou a raiz.
+        // Necessario porque o texto digitado dentro de (* ... *) pode gerar
+        // elementos filhos cujo pai direto e um no de comentario — um simples
+        // check no token nao captura esse caso.
+        if (isInsideComment(parameters.position)) return
+        if (isInsideString(parameters.position))  return
 
         // Case-insensitive: usuario pode digitar 'if' e receber 'IF'
         val r = result.caseInsensitive()
@@ -187,6 +181,40 @@ private object SclKeywordCompletionProvider : CompletionProvider<CompletionParam
         TYPES_BLOCKS.forEach      { r.addElement(it) }
         CONSTANTS.forEach         { r.addElement(it) }
         OPERATORS.forEach         { r.addElement(it) }
+    }
+
+    // ── Guardas de contexto ───────────────────────────────────────────────────
+
+    /**
+     * Sobe a arvore PSI a partir de [element] verificando se algum ancestral
+     * e um comentario. Cobre:
+     *   - Tokens LINE_COMMENT / BLOCK_COMMENT (via elementType)
+     *   - Nos PSI que implementam PsiComment (interface da plataforma)
+     * O loop para no primeiro no de arquivo (sem parent) ou quando encontra
+     * um no de comentario.
+     */
+    private fun isInsideComment(element: PsiElement): Boolean {
+        var current: PsiElement? = element
+        while (current != null) {
+            if (current is PsiComment) return true
+            val type = current.node?.elementType
+            if (type == SclTypes.LINE_COMMENT ||
+                type == SclTypes.BLOCK_COMMENT) return true
+            current = current.parent
+        }
+        return false
+    }
+
+    /** Verifica se o elemento esta dentro de um literal string. */
+    private fun isInsideString(element: PsiElement): Boolean {
+        var current: PsiElement? = element
+        while (current != null) {
+            val type = current.node?.elementType
+            if (type == SclTypes.STRING_LITERAL ||
+                type == SclTypes.QUOTED_IDENTIFIER) return true
+            current = current.parent
+        }
+        return false
     }
 
     // ── Factories ────────────────────────────────────────────────────────────
