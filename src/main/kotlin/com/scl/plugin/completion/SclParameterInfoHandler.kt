@@ -10,18 +10,20 @@ import com.scl.plugin.psi.SclCallStmt
 import com.scl.plugin.psi.SclTypes
 
 /**
- * Popup de informação de parâmetros SCL — Fase 4A.
+ * Popup de informação de parâmetros SCL — Fase 4A (fix Bug 2).
  *
- * Exibe assinatura das instruções builtin Siemens quando o cursor está
- * dentro dos parênteses de uma chamada. O parâmetro atual é realçado em negrito.
+ * Exibe assinatura builtin para TRÊS formas de chamada:
+ *   1. `TON(…)`           — nome é diretamente um builtin
+ *   2. `myTimer(…)`       — nome resolve via VAR section (ex: myTimer : TON)
+ *   3. `#myTimer(…)`      — idem, com prefixo # (LOCAL_VAR_ID)
  *
  * Exemplos de exibição:
- *   TON → "IN: BOOL :=, PT: TIME :=, Q: BOOL =>, ET: TIME =>"
- *   LEN → "IN: STRING :="          (parâmetro atual em negrito)
+ *   TON / myTimer → "IN: BOOL :=, PT: TIME :=, Q: BOOL =>, ET: TIME =>"
+ *   LEN           → "IN: STRING :="   (parâmetro atual em negrito)
  *
  * Ativação:
- *   – Automática: ao digitar `(` após nome de builtin reconhecido
- *   – Manual    : Ctrl+P (ou Cmd+P no macOS) com cursor dentro de `(...)`
+ *   – Automática : ao digitar `(` após nome reconhecido
+ *   – Manual     : Ctrl+P (ou Cmd+P no macOS) com cursor dentro de `(...)`
  *
  * Fonte: https://plugins.jetbrains.com/docs/intellij/parameter-info.html
  */
@@ -44,8 +46,8 @@ class SclParameterInfoHandler : ParameterInfoHandler<SclCallStmt, SclBuiltin> {
     // ─────────────────────────────────────────────────────────────────────────
 
     override fun showParameterInfo(element: SclCallStmt, context: CreateParameterInfoContext) {
-        val name    = element.callName() ?: return
-        val builtin = SclBuiltinFunctions.findByName(name) ?: return
+        // resolveBuiltin() tenta lookup direto e, se falhar, busca na VAR section
+        val builtin = element.resolveBuiltin() ?: return
         context.itemsToShow = arrayOf(builtin)
         context.highlightedElement = element
     }

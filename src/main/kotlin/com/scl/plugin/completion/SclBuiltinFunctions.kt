@@ -251,7 +251,7 @@ object SclBuiltinFunctions {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Extensão PSI: extrai o nome da função/FB de um SclCallStmt
+// Extensão PSI: extrai nome e resolve builtin de um SclCallStmt
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -266,10 +266,66 @@ internal fun SclCallStmt.callName(): String? {
     var node: ASTNode? = this.node.firstChildNode
     while (node != null && node.elementType != SclTypes.LPAREN) {
         when (node.elementType) {
-            SclTypes.IDENTIFIER      -> lastName = node.text
-            SclTypes.LOCAL_VAR_ID    -> lastName = node.text.trimStart('#')
+            SclTypes.IDENTIFIER   -> lastName = node.text
+            SclTypes.LOCAL_VAR_ID -> lastName = node.text.trimStart('#')
         }
         node = node.treeNext
     }
     return lastName
+}
+
+/**
+ * Resolve o [SclBuiltin] correspondente a um callStmt.
+ *
+ * Estratégia em duas etapas:
+ *   1. Lookup direto: `TON(` → "TON" é builtin → retorna imediatamente.
+ *   2. Resolução por VAR: `myTimer(` ou `#myTimer(` → busca declaração
+ *      `myTimer : TON` nas seções VAR do bloco pai → retorna builtin do tipo.
+ *
+ * Isso cobre:
+ *   – Chamadas diretas:   `TON(IN := ..., PT := ...);`
+ *   – Instâncias locais:  `myTimer(IN := ..., PT := ...);`
+ *   – Instâncias com #:   `#myTimer(IN := ..., PT := ...);`
+ */
+internal fun SclCallStmt.resolveBuiltin(): SclBuiltin? {
+    val name = callName() ?: return null
+
+    // Passo 1 — nome é diretamente um builtin (TON, CTU, LEN…)
+    SclBuiltinFunctions.findByName(name)?.let { return it }
+
+    // Passo 2 — nome é uma variável; busca o tipo nas VAR sections do bloco pai
+    return resolveVarType(this, name)
+}
+
+/**
+ * Busca nas seções VAR do bloco pai (FUNCTION_BLOCK, FUNCTION ou OB)
+ * uma declaração `varName : <TipoBuiltin>` e retorna o builtin correspondente.
+ */
+private fun resolveVarType(from: SclCallStmt, varName: String): SclBuiltin? {
+    var element: com.intellij.psi.PsiElement? = from.parent
+    while (element != null && element !is com.intellij.psi.PsiFile) {
+        val varSections: List<com.scl.plugin.psi.SclVarSection>? = when (element) {
+            is com.scl.plugin.psi.SclFunctionBlockDecl -> element.varSectionList
+            is com.scl.plugin.psi.SclFunctionDecl      -> element.varSectionList
+            is com.scl.plugin.psi.SclOrgBlockDecl      -> element.varSectionList
+            else -> null
+        }
+        if (varSections != null) {
+            for (section in varSections) {
+                for (decl in section.varDeclList) {
+                    val declName = decl.node.firstChildNode
+                        ?.takeIf { it.elementType == SclTypes.IDENTIFIER }
+                        ?.text ?: continue
+                    if (declName.equals(varName, ignoreCase = true)) {
+                        // Obtém o texto bruto do typeRef (ex: "TON", "CTU")
+                        val typeName = decl.typeRef.node.firstChildNode?.text ?: continue
+                        return SclBuiltinFunctions.findByName(typeName)
+                    }
+                }
+            }
+            return null   // bloco pai encontrado mas variável não declarada
+        }
+        element = element.parent
+    }
+    return null
 }

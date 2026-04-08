@@ -250,9 +250,8 @@ private object SclParamNameCompletionProvider : CompletionProvider<CompletionPar
         val lparen = callStmt.node.findChildByType(SclTypes.LPAREN) ?: return
         if (parameters.position.textRange.startOffset <= lparen.startOffset) return
 
-        // Identifica o builtin chamado
-        val name    = callStmt.callName() ?: return
-        val builtin = SclBuiltinFunctions.findByName(name) ?: return
+        // Resolve o builtin: lookup direto (TON) ou via VAR section (myTimer → TON)
+        val builtin = callStmt.resolveBuiltin() ?: return
 
         val r = result.caseInsensitive()
         for (param in builtin.parameters) {
