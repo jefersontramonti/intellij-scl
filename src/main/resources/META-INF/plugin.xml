@@ -82,8 +82,27 @@
             language="SCL"
             implementationClass="com.scl.plugin.SclCommenter"/>
 
+        <!-- ── Brace Matcher ─────────────────────────────────────────────
+             Destaca pares estruturais ao clicar: FUNCTION_BLOCK <-> END_FUNCTION_BLOCK,
+             IF <-> END_IF, VAR_* <-> END_VAR, etc.
+             structural=true: ativa navegacao Ctrl+Shift+M entre pares.
+             ──────────────────────────────────────────────────────────── -->
+        <lang.braceMatcher
+            language="SCL"
+            implementationClass="com.scl.plugin.SclBraceMatcher"/>
+
+        <!-- ── Parameter Info ────────────────────────────────────────────
+             Popup de assinatura ao digitar `(` apos nome de builtin Siemens.
+             Ex: TON -> "IN: BOOL :=, PT: TIME :=, Q: BOOL =>, ET: TIME =>"
+             Ativacao manual: Ctrl+P (Windows/Linux) ou Cmd+P (macOS).
+             ──────────────────────────────────────────────────────────── -->
+        <codeInsight.parameterInfo
+            language="SCL"
+            implementationClass="com.scl.plugin.completion.SclParameterInfoHandler"/>
+
         <!-- ── Completion Contributor ────────────────────────────────────
              Palavras-chave, tipos, constantes em qualquer posicao SCL.
+             Fase 4A: builtins com template de chamada + nomes de parametros.
              dumbAware="true": funciona durante indexacao do projeto.
              ──────────────────────────────────────────────────────────── -->
         <completion.contributor
