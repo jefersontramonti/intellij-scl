@@ -98,7 +98,8 @@
              ──────────────────────────────────────────────────────────── -->
         <codeInsight.parameterInfo
             language="SCL"
-            implementationClass="com.scl.plugin.completion.SclParameterInfoHandler"/>
+            implementationClass="com.scl.plugin.completion.SclParameterInfoHandler"
+            dumbAware="true"/>
 
         <!-- ── Completion Contributor ────────────────────────────────────
              Palavras-chave, tipos, constantes em qualquer posicao SCL.

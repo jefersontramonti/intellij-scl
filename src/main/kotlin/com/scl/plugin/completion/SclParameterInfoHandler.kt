@@ -4,6 +4,7 @@ import com.intellij.lang.parameterInfo.CreateParameterInfoContext
 import com.intellij.lang.parameterInfo.ParameterInfoHandler
 import com.intellij.lang.parameterInfo.ParameterInfoUIContext
 import com.intellij.lang.parameterInfo.UpdateParameterInfoContext
+import com.intellij.openapi.project.DumbAware
 import com.intellij.psi.PsiFile
 import com.intellij.psi.util.PsiTreeUtil
 import com.scl.plugin.psi.SclCallStmt
@@ -27,7 +28,7 @@ import com.scl.plugin.psi.SclTypes
  *
  * Fonte: https://plugins.jetbrains.com/docs/intellij/parameter-info.html
  */
-class SclParameterInfoHandler : ParameterInfoHandler<SclCallStmt, SclBuiltin> {
+class SclParameterInfoHandler : ParameterInfoHandler<SclCallStmt, SclBuiltin>, DumbAware {
 
     // ─────────────────────────────────────────────────────────────────────────
     // 1. Localiza o elemento-âncora ao abrir o popup (Ctrl+P ou digitação de `(`)

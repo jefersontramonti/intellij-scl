@@ -342,7 +342,10 @@ varSection ::= varKeyword varDecl* END_VAR {
 private varKeyword ::= VAR | VAR_INPUT | VAR_OUTPUT | VAR_IN_OUT | VAR_STATIC | VAR_TEMP | VAR_CONSTANT
 
 // Declaracao de variavel: pode ser simples ou instancia de FB local
-varDecl ::= IDENTIFIER COLON typeRef ( ASSIGN expression )? SEMICOLON
+// pin=1: compromete ao ver IDENTIFIER, evita nos vazios em erro de parsing
+varDecl ::= IDENTIFIER COLON typeRef ( ASSIGN expression )? SEMICOLON {
+  pin=1
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Referencia de tipo
@@ -382,24 +385,28 @@ private builtinType ::= TYPE_BOOL | TYPE_BYTE | TYPE_WORD | TYPE_DWORD | TYPE_LW
 
 statementList ::= statement*
 
+// private: elimina o no SclStatement wrapper — os tipos concretos
+// (SclIfStatement, SclForStatement, etc.) aparecem diretamente em SclStatementList.
+// Isso corrige o PSI viewer e deixa o folding/brace-matching encontrarem os nos.
+//
 // Ordem das alternativas e importante para o parser PEG:
 // - Blocos de controle com palavra-chave propria primeiro (sem ambiguidade)
 // - assignStmt e callStmt antes de labeledStmt (ambos comecam com IDENTIFIER)
 // - labeledStmt antes de SEMICOLON vazio (evita consumir ':' incorretamente)
-statement ::= ifStatement
-            | caseStatement
-            | forStatement
-            | whileStatement
-            | repeatStatement
-            | returnStmt    SEMICOLON
-            | exitStmt      SEMICOLON
-            | continueStmt  SEMICOLON
-            | gotoStmt      SEMICOLON
-            | regionStmt
-            | assignStmt    SEMICOLON
-            | callStmt      SEMICOLON
-            | labeledStmt
-            | SEMICOLON
+private statement ::= ifStatement
+                    | caseStatement
+                    | forStatement
+                    | whileStatement
+                    | repeatStatement
+                    | returnStmt    SEMICOLON
+                    | exitStmt      SEMICOLON
+                    | continueStmt  SEMICOLON
+                    | gotoStmt      SEMICOLON
+                    | regionStmt
+                    | assignStmt    SEMICOLON
+                    | callStmt      SEMICOLON
+                    | labeledStmt
+                    | SEMICOLON
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Statements simples
