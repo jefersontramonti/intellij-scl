@@ -49,6 +49,7 @@ VAR
     s_FlowWatchdog  : TON;              // Watchdog fluxo (10 s)
     s_FillTimer     : TON;              // Timer enchimento em TIMER_CTRL
     s_DrainTimer    : TON;              // Timer drenagem em TIMER_CTRL
+    testVal : LREAL;
 END_VAR
 
 VAR_TEMP
@@ -66,6 +67,10 @@ BEGIN
         s_State     := 99;
         s_FaultCode := 9800;
     END_IF;
+
+    s_DrainTimer.Q := FALSE;
+    s_FillTimer.Q  := FALSE;
+
 
     //==========================================================
     // DETECÇÃO DE BORDA — botões (R_TRIG: dispara na subida)
@@ -147,9 +152,9 @@ BEGIN
             IF s_LevelHiLatch THEN
                 t_FillOut   := 0.0;
                 s_FaultCode := 2001;
-                s_State     := 98;      // Nível máximo → FAULT
+                s_State     := 98; // Nível máximo → FAULT
             ELSIF s_StopEdge.Q THEN
-                s_State := 3;           // Stop → DRAINING
+                s_State := 3; // Stop → DRAINING
             END_IF;
 
         //------------------------------------------------------
@@ -195,14 +200,9 @@ BEGIN
 
             IF s_StopEdge.Q THEN
                 s_TimerPhase := 0;
-                s_State      := 3;      // Stop → DRAINING (esvazia antes)
+                s_State      := 3;     // Stop → DRAINING (esvazia antes)
+
             END_IF;
-
-        //------------------------------------------------------
-        5: // HOLDING — reservado (saídas já zeradas)
-        //------------------------------------------------------
-            // Nenhuma ação — aguarda comando externo
-
         //------------------------------------------------------
         98: // FAULT — válvulas fechadas, aguarda reset
         //------------------------------------------------------

@@ -33,6 +33,7 @@ END_VAR
 VAR
     s_BlinkTimer : TON;    // Gerador de pisca 500 ms
     s_BlinkState : Bool;   // Estado atual do pisca (TRUE = ON)
+    s_StartingTimer : TON;
 END_VAR
 
 BEGIN
@@ -43,6 +44,8 @@ BEGIN
     //==========================================================
     s_BlinkTimer(IN := NOT s_BlinkTimer.Q, PT := T#500MS);
     s_BlinkState := s_BlinkTimer.Q;
+
+    s_StartingTimer(IN := i_State = 1,)
 
     //==========================================================
     // INICIALIZA SAÍDAS — padrão OFF (evita latch de scan anterior)
@@ -64,6 +67,7 @@ BEGIN
         //------------------------------------------------------
             o_LightGreen := TRUE;
             o_StartLight := TRUE;
+
 
         //------------------------------------------------------
         1: // STARTING — verde piscando, Stop aceso (pode cancelar)
@@ -114,4 +118,4 @@ BEGIN
 
     END_CASE;
 
-END_FUNCTION_BLOCK
+END_FUNCTION_BLOCK;

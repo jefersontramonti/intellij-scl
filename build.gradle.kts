@@ -93,6 +93,15 @@ tasks.compileKotlin {
     dependsOn(generateSclLexer)   // transitivamente depende de generateSclParser
 }
 
+// ── runIde: abre a pasta examples/ automaticamente como projeto de teste ─────
+tasks {
+    named<org.jetbrains.intellij.platform.gradle.tasks.RunIdeTask>("runIde") {
+        // IntelliJ aceita um caminho de projeto como argumento posicional.
+        // Isso elimina o passo manual de File > Open a cada teste.
+        args(project.file("examples").absolutePath)
+    }
+}
+
 // ── Configuracao do Plugin ────────────────────────────────────────────────────
 intellijPlatform {
     pluginConfiguration {

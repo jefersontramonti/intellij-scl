@@ -266,8 +266,9 @@ internal fun SclCallStmt.callName(): String? {
     var node: ASTNode? = this.node.firstChildNode
     while (node != null && node.elementType != SclTypes.LPAREN) {
         when (node.elementType) {
-            SclTypes.IDENTIFIER   -> lastName = node.text
-            SclTypes.LOCAL_VAR_ID -> lastName = node.text.trimStart('#')
+            SclTypes.IDENTIFIER        -> lastName = node.text
+            SclTypes.LOCAL_VAR_ID      -> lastName = node.text.trimStart('#')
+            SclTypes.QUOTED_IDENTIFIER -> lastName = node.text.trim('"')
         }
         node = node.treeNext
     }

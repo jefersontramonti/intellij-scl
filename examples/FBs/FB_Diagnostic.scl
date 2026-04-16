@@ -13,6 +13,7 @@ FUNCTION_BLOCK "FB_Diagnostic"
 VAR_INPUT
     i_FaultCode : Int;   // Código de falha atual (0 = sem falha)
     i_State     : Int;   // Estado FSM atual (para contexto futuro)
+    s_StartingTime : TON;
 END_VAR
 
 VAR_OUTPUT
@@ -36,6 +37,9 @@ BEGIN
     //   - X → Y  : falha diferente (sem reset entre elas)
     // Não registra o retorno a 0 (falha limpa não é evento)
     //==========================================================
+
+    s_StartingTime := TON(TOD);
+
     IF (i_FaultCode <> 0) AND (i_FaultCode <> s_PrevFaultCode) THEN
 
         // Escreve no ring buffer na posição atual

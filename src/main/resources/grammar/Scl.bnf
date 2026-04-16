@@ -419,7 +419,15 @@ assignStmt ::= lvalue (ASSIGN | PLUS_ASSIGN | MINUS_ASSIGN | MULTIPLY_ASSIGN | D
 }
 
 // Chamada de funcao/FB como statement (sem retorno capturado)
-callStmt ::= qualifiedName LPAREN argList? RPAREN
+// callableRef cobre: foo(, foo.bar(, "DB_Name"(, #localVar(
+// pin=2: apos ver callableRef + LPAREN, compromete com o no SclCallStmt
+//        mesmo sem RPAREN (essencial para completion funcionar durante edicao)
+callStmt ::= callableRef LPAREN argList? RPAREN {
+    pin=2
+}
+private callableRef ::= QUOTED_IDENTIFIER
+                      | LOCAL_VAR_ID
+                      | IDENTIFIER ( DOT IDENTIFIER )*
 
 returnStmt   ::= RETURN
 exitStmt     ::= EXIT
@@ -487,7 +495,8 @@ repeatStatement ::= REPEAT statementList UNTIL expression SEMICOLON? END_REPEAT 
 // Posicional:        expression (FC sem nome de parametro)
 // ─────────────────────────────────────────────────────────────────────────────
 
-argList  ::= argument ( COMMA argument )*
+// pin=1: compromete com a lista ao ver o primeiro argument
+argList  ::= argument ( COMMA argument )* { pin=1 }
 argument ::= namedArg | expression
 
 // namedArg deve vir antes de expression (ambos podem comecar com IDENTIFIER)

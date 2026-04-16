@@ -23,7 +23,7 @@ src/main/gen/
 *.ipr
 *.iws
 
-# ── Gradle wrapper jar (scripts are versioned, binary is not) ────────────────
+# ── Gradle wrapper jar (scripts são versionados, binário não) ────────────────
 gradle/wrapper/gradle-wrapper.jar
 
 # ── Kotlin compiler caches ────────────────────────────────────────────────────
@@ -45,5 +45,18 @@ local.properties
 *.zip
 dist/
 
-# ── Siemens reference docs (PDFs + generated markdowns — copyright material) ──
+# ── Siemens reference docs (PDFs — copyright material, arquivos grandes) ──────
 docs/
+examples/exemplo01.pdf
+
+# ── Arquivos extraídos pelo runIde do IntelliJ SDK (não são código do plugin) ──
+# Ancoragem com '/' = apenas no root do repositório
+/META-INF/
+/com/
+/fileTemplates/
+/generated-xmls/
+/intellij.*.xml
+/plugin.xml
+
+# ── Documentos binários de projeto ───────────────────────────────────────────
+*.docx
