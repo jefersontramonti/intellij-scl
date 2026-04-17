@@ -27,77 +27,75 @@ ORGANIZATION_BLOCK "OB_Main"
 //=============================================================
 
 VAR_TEMP
-    // Sem variáveis temporárias
+// Sem variáveis temporárias
 END_VAR
 
 BEGIN
-    //==========================================================
-    // 1. DB_Tank1 — FSM principal
-    //    Entradas físicas passadas diretamente.
-    //    Parâmetros HMI (i_TimerMode, i_FillTime, etc.) NÃO
-    //    são conectados aqui — o TIA Portal retém os valores
-    //    escritos pelo HMI no instance DB entre varreduras.
-    //    Saídas de status (o_State, o_FaultCode, etc.) ficam
-    //    automaticamente disponíveis em "FB_TankControl_DB".o_* .
-    //==========================================================
+//==========================================================
+// 1. DB_Tank1 — FSM principal
+//    Entradas físicas passadas diretamente.
+//    Parâmetros HMI (i_TimerMode, i_FillTime, etc.) NÃO
+//    são conectados aqui — o TIA Portal retém os valores
+//    escritos pelo HMI no instance DB entre varreduras.
+//    Saídas de status (o_State, o_FaultCode, etc.) ficam
+//    automaticamente disponíveis em "FB_TankControl_DB".o_* .
+//==========================================================
     "FB_TankControl_DB"(
-        i_EStop      := %I0.3,
-        i_Start      := %I0.6,
-        i_Stop       := %I0.5,
+        i_EStop := %I0.3,
+        i_Start := %I0.6,
+        i_Stop := %I0.5,
         i_FaultReset := %I0.4,
         i_LevelMeter := %ID34,
-        i_FlowMeter  := %ID30,
-        i_PotFill    := %ID38,
-        i_PotDrain   := %ID42,
-        o_FillValve  => %QD34,
+        i_FlowMeter := %ID30,
+        i_PotFill := %ID38,
+        i_PotDrain := %ID42,
+        o_FillValve => %QD34,
         o_DrainValve => %QD30
     );
 
-    //==========================================================
-    // 2. DB_Timer1 — Display de tempo decorrido → %QD38
-    //    Lê saídas do DB_Tank1 (disponíveis após chamada acima).
-    //==========================================================
-    "FB_TimerControl_DB"(
-        i_TimerElapsed := "FB_TankControl_DB".o_TimerElapsed,
-        i_State        := "FB_TankControl_DB".o_State,
-        o_TimerDisplay => %QD38
-    );
+//==========================================================
+// 2. DB_Timer1 — Display de tempo decorrido → %QD38
+//    Lê saídas do DB_Tank1 (disponíveis após chamada acima).
+//==========================================================
+"FB_TimerControl_DB"(
+i_TimerElapsed := "FB_TankControl_DB".o_TimerElapsed,
+i_State := "FB_TankControl_DB".o_State,
+o_TimerDisplay => %QD38
+);
 
 
-    //==========================================================
-    // 3. DB_Light1 — Torre luminosa + luzes de botões
-    //    Escreve %Q1.0..%Q1.5 conforme estado FSM.
-    //==========================================================
-    "FB_StackLight_DB"(
-        i_State       := "FB_TankControl_DB".o_State,
-        i_FaultCode   := "FB_TankControl_DB".o_FaultCode,
-        o_LightRed    => %Q1.0,
-        o_LightGreen  => %Q1.1,
-        o_LightYellow => %Q1.2,
-        o_StartLight  => %Q1.3,
-        o_ResetLight  => %Q1.4,
-        o_StopLight   => %Q1.5
-    );
-    //==========================================================
-    // 4. DB_Diag1 — Histórico de falhas (ring buffer 20)
-    //    Outputs (o_FaultCount, o_LastFault) ficam no DB_Diag1.
-    //==========================================================
-    "FB_Diagnostic_DB"(
-        i_FaultCode := "FB_TankControl_DB".o_FaultCode,
-        i_State     := "FB_TankControl_DB".o_State
-    );
+//==========================================================
+// 3. DB_Light1 — Torre luminosa + luzes de botões
+//    Escreve %Q1.0..%Q1.5 conforme estado FSM.
+//==========================================================
+"FB_StackLight_DB"(
+i_State := "FB_TankControl_DB".o_State,
+i_FaultCode := "FB_TankControl_DB".o_FaultCode,
+o_LightRed => %Q1.0,
+o_LightGreen => %Q1.1,
+o_LightYellow => %Q1.2,
+o_StartLight => %Q1.3,
+o_ResetLight => %Q1.4,
+o_StopLight => %Q1.5
+);
+//==========================================================
+// 4. DB_Diag1 — Histórico de falhas (ring buffer 20)
+//    Outputs (o_FaultCount, o_LastFault) ficam no DB_Diag1.
+//==========================================================
+"FB_Diagnostic_DB"(
+i_FaultCode := "FB_TankControl_DB".o_FaultCode,
+i_State := "FB_TankControl_DB".o_State
+);
 
-    //==========================================================
-    // 5. INTERLOCK BACKUP — Segurança final E-Stop NF
-    //    Independente da FSM: força válvulas a 0 caso o E-Stop
-    //    esteja ativo, mesmo que algum FB tenha falhado.
-    //    NF: %I0.3 = FALSE → emergência
-    //==========================================================
-    IF NOT %I0.3 THEN
-        %QD34 := 0.0;   // Fill Valve → forçado a 0
-        %QD30 := 0.0;   // Discharge Valve → forçado a 0
-    END_IF;
-
-
+//==========================================================
+// 5. INTERLOCK BACKUP — Segurança final E-Stop NF
+//    Independente da FSM: força válvulas a 0 caso o E-Stop
+//    esteja ativo, mesmo que algum FB tenha falhado.
+//    NF: %I0.3 = FALSE → emergência
+//==========================================================
+IF NOT %I0.3 THEN
+%QD34 := 0.0;   // Fill Valve → forçado a 0
+%QD30 := 0.0;   // Discharge Valve → forçado a 0
+END_IF;
 
 END_ORGANIZATION_BLOCK

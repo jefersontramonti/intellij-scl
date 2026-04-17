@@ -160,6 +160,7 @@
              ──────────────────────────────────────────────────────────── -->
         <localInspection
             language="SCL"
+            shortName="SclHardwareCompatibility"
             displayName="SCL Hardware Compatibility"
             groupName="SCL"
             enabledByDefault="true"
@@ -176,6 +177,34 @@
              ──────────────────────────────────────────────────────────── -->
         <platform.backend.documentation.targetProvider
             implementation="com.scl.plugin.documentation.SclDocumentationTargetProvider"/>
+
+        <!-- ── Structure View (Alt+7) ───────────────────────────────────────────
+             Painel lateral com hierarquia do arquivo SCL:
+             Arquivo → FB/FC/OB/TYPE → VAR_INPUT/VAR_OUTPUT/… → variáveis.
+             Clicar em qualquer nó navega para a declaração no editor.
+             ──────────────────────────────────────────────────────────── -->
+        <lang.psiStructureViewFactory
+            language="SCL"
+            implementationClass="com.scl.plugin.structure.SclStructureViewFactory"/>
+
+        <!-- ── Code Style Settings Providers ───────────────────────────────
+             Dois EPs são necessários:
+             1. codeStyleSettingsProvider → alimenta o CustomCodeStyleSettingsManager
+                (sem ele, getCustomSettings() lança RuntimeException)
+             2. langCodeStyleSettingsProvider → UI de Code Style + getCodeSample()
+             ──────────────────────────────────────────────────────────── -->
+        <codeStyleSettingsProvider
+            implementation="com.scl.plugin.formatting.SclCodeStyleSettingsProvider"/>
+        <langCodeStyleSettingsProvider
+            implementation="com.scl.plugin.formatting.SclLanguageCodeStyleSettingsProvider"/>
+
+        <!-- ── Formatter (Ctrl+Alt+L) ────────────────────────────────────────
+             FormattingModelBuilder que delega indentação ao SclBlock e
+             espaçamento ao SclSpacingBuilder.
+             ──────────────────────────────────────────────────────────── -->
+        <lang.formatter
+            language="SCL"
+            implementationClass="com.scl.plugin.formatting.SclFormattingModelBuilder"/>
 
     </extensions>
 

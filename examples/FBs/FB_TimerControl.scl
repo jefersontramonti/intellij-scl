@@ -14,7 +14,7 @@ FUNCTION_BLOCK "FB_TimerControl"
 
 VAR_INPUT
     i_TimerElapsed : DInt;   // Segundos decorridos (FB_TankControl.o_TimerElapsed)
-    i_State        : Int;    // Estado FSM atual (FB_TankControl.o_State)
+    i_State : Int;    // Estado FSM atual (FB_TankControl.o_State)
 END_VAR
 
 VAR_OUTPUT
@@ -22,11 +22,11 @@ VAR_OUTPUT
 END_VAR
 
 BEGIN
-    //==========================================================
-    // Encaminha tempo decorrido para o display apenas nos
-    // estados onde um timer está activo (STARTING e TIMER_CTRL).
-    // Nos demais estados, exibe 0 (display apagado / zerado).
-    //==========================================================
+//==========================================================
+// Encaminha tempo decorrido para o display apenas nos
+// estados onde um timer está activo (STARTING e TIMER_CTRL).
+// Nos demais estados, exibe 0 (display apagado / zerado).
+//==========================================================
     IF (i_State = 1) OR (i_State = 4) THEN
         o_TimerDisplay := i_TimerElapsed;
     ELSE
