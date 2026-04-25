@@ -329,12 +329,13 @@
         <referencesSearch
             implementation="com.scl.plugin.findUsages.SclUsagesSearcher"/>
 
-        <!-- ── New Project Wizard ────────────────────────────────────────────
-             Adiciona "SCL" na lista de linguagens do File → New Project.
-             Cria FB_Main.scl de exemplo na raiz do projeto.
+        <!-- ── New Project Wizard — ModuleType ──────────────────────────────
+             Registra "SCL" no New Project dialog com wizard de CPU Target
+             e Template (Empty / Basic FB+OB / FSM).
              ──────────────────────────────────────────────────────────── -->
-        <newProjectWizard.generator
-            implementation="com.scl.plugin.wizard.SclNewProjectWizard"/>
+        <moduleType
+            id="SCL_MODULE_TYPE"
+            implementationClass="com.scl.plugin.wizard.SclModuleType"/>
 
     </extensions>
 

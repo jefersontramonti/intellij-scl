@@ -1,0 +1,5 @@
+FUNCTION_BLOCK ""
+{ S7_Optimized_Access := 'TRUE' }
+
+
+END_FUNCTION_BLOCK
