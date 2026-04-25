@@ -36,10 +36,13 @@ private class SclNewProjectWizardStep(
     private val base: NewProjectWizardBaseStep
 ) : AbstractNewProjectWizardStep(base) {
 
-    override fun setupUI(builder: Panel) {}
+    override fun setupUI(builder: Panel) {
+        // Must call base so name/location/git fields are rendered and bound
+        base.setupUI(builder)
+    }
 
     override fun setupProject(project: Project) {
-        // Propagate up so NewProjectWizardBaseStep commits name/path into WizardContext
+        // Must call base so name/path are committed into WizardContext before platform uses them
         base.setupProject(project)
 
         val dir = project.basePath ?: return
