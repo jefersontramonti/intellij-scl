@@ -19,8 +19,6 @@ class SclNewProjectWizard : GeneratorNewProjectWizard {
     override val icon: Icon = SclIcons.FUNCTION_BLOCK
 
     override fun createStep(context: WizardContext): NewProjectWizardStep {
-        // Root step wraps the WizardContext and feeds into NewProjectWizardBaseStep
-        // (name / location / Git fields) followed by our content step.
         val root = object : NewProjectWizardStep {
             override val context       = context
             override val data          = UserDataHolderBase()
@@ -35,16 +33,19 @@ class SclNewProjectWizard : GeneratorNewProjectWizard {
 }
 
 private class SclNewProjectWizardStep(
-    parent: NewProjectWizardStep
-) : AbstractNewProjectWizardStep(parent) {
+    private val base: NewProjectWizardBaseStep
+) : AbstractNewProjectWizardStep(base) {
 
     override fun setupUI(builder: Panel) {}
 
     override fun setupProject(project: Project) {
-        val base = project.basePath ?: return
-        File(base).mkdirs()
+        // Propagate up so NewProjectWizardBaseStep commits name/path into WizardContext
+        base.setupProject(project)
 
-        File(base, "FB_Main.scl").writeText(
+        val dir = project.basePath ?: return
+        File(dir).mkdirs()
+
+        File(dir, "FB_Main.scl").writeText(
             """
             FUNCTION_BLOCK "FB_Main"
             { S7_Optimized_Access := 'TRUE' }
