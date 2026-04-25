@@ -12,14 +12,14 @@ FUNCTION_BLOCK "FB_TimerControl"
 // Estados com display ativo: 1=STARTING, 4=TIMER_CTRL
 //=============================================================
 
-VAR_INPUT
-    i_TimerElapsed : DInt;   // Segundos decorridos (FB_TankControl.o_TimerElapsed)
-    i_State : Int;    // Estado FSM atual (FB_TankControl.o_State)
-END_VAR
+    VAR_INPUT
+        i_TimerElapsed : DInt;   // Segundos decorridos (FB_TankControl.o_TimerElapsed)
+        i_State : Int;    // Estado FSM atual (FB_TankControl.o_State)
+    END_VAR
 
-VAR_OUTPUT
-    o_TimerDisplay : DInt;   // %QD38 — display timer (segundos inteiros)
-END_VAR
+    VAR_OUTPUT
+        o_TimerDisplay : DInt;   // %QD38 — display timer (segundos inteiros)
+    END_VAR
 
 BEGIN
 //==========================================================

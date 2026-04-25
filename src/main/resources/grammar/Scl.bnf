@@ -241,14 +241,17 @@ private blockAttributes ::= LBRACE blockAttr (COMMA blockAttr)* RBRACE
 private blockAttr ::= IDENTIFIER ASSIGN expression
 
 // FB Declaration Section: Constants? Labels? Temp? Static? Parameters?
+// SEMICOLON? — TIA Portal nao exige ; apos END_FUNCTION_BLOCK, mas tolera
 functionBlockDecl ::= FUNCTION_BLOCK blockName
                       blockAttributes*
                       constSection?
                       labelSection?
                       varSection*
                       (BEGIN statementList)?
-                      END_FUNCTION_BLOCK {
+                      END_FUNCTION_BLOCK SEMICOLON? {
   pin=1
+  mixin="com.scl.plugin.psi.SclNamedElementImpl"
+  implements="com.scl.plugin.psi.SclNamedElement"
 }
 
 // FC Declaration Section: Constants? Labels? Temp? Parameters?
@@ -259,8 +262,10 @@ functionDecl ::= FUNCTION blockName COLON (VOID | typeRef)
                  labelSection?
                  varSection*
                  (BEGIN statementList)?
-                 END_FUNCTION {
+                 END_FUNCTION SEMICOLON? {
   pin=1
+  mixin="com.scl.plugin.psi.SclNamedElementImpl"
+  implements="com.scl.plugin.psi.SclNamedElement"
 }
 
 // OB Declaration Section: Constants? Labels? Temp?
@@ -270,8 +275,10 @@ orgBlockDecl ::= ORGANIZATION_BLOCK blockName
                  labelSection?
                  varSection*
                  (BEGIN statementList)?
-                 END_ORGANIZATION_BLOCK {
+                 END_ORGANIZATION_BLOCK SEMICOLON? {
   pin=1
+  mixin="com.scl.plugin.psi.SclNamedElementImpl"
+  implements="com.scl.plugin.psi.SclNamedElement"
 }
 
 // DB Declaration Section: pode ser Interface (varSection), STRUCT ou UDT ref
@@ -280,8 +287,10 @@ dataBlockDecl ::= DATA_BLOCK blockName
                   blockAttributes*
                   (varSection | structDecl)*
                   (BEGIN dbAssignList)?
-                  END_DATA_BLOCK {
+                  END_DATA_BLOCK SEMICOLON? {
   pin=1
+  mixin="com.scl.plugin.psi.SclNamedElementImpl"
+  implements="com.scl.plugin.psi.SclNamedElement"
 }
 
 // Secao de atribuicoes do DB: IDENTIFIER := expr ;
@@ -315,21 +324,40 @@ labelSection ::= LABEL IDENTIFIER (COMMA IDENTIFIER)* SEMICOLON END_LABEL {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Declaracoes de tipo (TYPE ... END_TYPE)
+//
+// UDT TIA Portal (Siemens): nome seguido diretamente de STRUCT, sem COLON
+//   TYPE "UDT_Name"
+//       STRUCT
+//           campo : Tipo;
+//       END_STRUCT
+//   END_TYPE
+//
+// Alias SCLV4: nome seguido de COLON + tipo (simples ou ARRAY)
+//   TYPE "MyAlias" : INT; END_TYPE
+//   TYPE "MyArr"   : ARRAY[1..10] OF REAL; END_TYPE
+//
+// typeDecl aceita varios typeDef e tambem a forma "TYPE corpo-direto END_TYPE"
+// (um unico UDT sem repetir o header), que aparece em alguns exports.
 // ─────────────────────────────────────────────────────────────────────────────
 
 typeDecl ::= TYPE typeDef* END_TYPE {
   pin=1
 }
 
-typeDef ::= blockName COLON ( structDecl | typeRef SEMICOLON ) {
+typeDef ::= blockName ( structDecl | COLON typeRef SEMICOLON ) {
   pin=1
+  mixin="com.scl.plugin.psi.SclNamedElementImpl"
+  implements="com.scl.plugin.psi.SclNamedElement"
 }
 
 structDecl ::= STRUCT structField* END_STRUCT {
   pin=1
 }
 
-structField ::= IDENTIFIER COLON typeRef ( ASSIGN expression )? SEMICOLON
+structField ::= IDENTIFIER COLON typeRef ( ASSIGN expression )? SEMICOLON {
+  mixin="com.scl.plugin.psi.SclNamedElementImpl"
+  implements="com.scl.plugin.psi.SclNamedElement"
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Secoes de variaveis
@@ -345,6 +373,8 @@ private varKeyword ::= VAR | VAR_INPUT | VAR_OUTPUT | VAR_IN_OUT | VAR_STATIC | 
 // pin=1: compromete ao ver IDENTIFIER, evita nos vazios em erro de parsing
 varDecl ::= IDENTIFIER COLON typeRef ( ASSIGN expression )? SEMICOLON {
   pin=1
+  mixin="com.scl.plugin.psi.SclNamedElementImpl"
+  implements="com.scl.plugin.psi.SclNamedElement"
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -419,15 +449,18 @@ assignStmt ::= lvalue (ASSIGN | PLUS_ASSIGN | MINUS_ASSIGN | MULTIPLY_ASSIGN | D
 }
 
 // Chamada de funcao/FB como statement (sem retorno capturado)
-// callableRef cobre: foo(, foo.bar(, "DB_Name"(, #localVar(
+// callableRef cobre:
+//   foo(                                ← identificador simples
+//   foo.bar(                             ← acesso a membro
+//   #localVar(                           ← variavel local TIA Portal
+//   "DB_Name"(                           ← instance DB global TIA Portal
+//   "DB_Name".FB_Name(                   ← FB qualificado por DB (TIA Portal)
 // pin=2: apos ver callableRef + LPAREN, compromete com o no SclCallStmt
 //        mesmo sem RPAREN (essencial para completion funcionar durante edicao)
 callStmt ::= callableRef LPAREN argList? RPAREN {
     pin=2
 }
-private callableRef ::= QUOTED_IDENTIFIER
-                      | LOCAL_VAR_ID
-                      | IDENTIFIER ( DOT IDENTIFIER )*
+private callableRef ::= ( IDENTIFIER | QUOTED_IDENTIFIER | LOCAL_VAR_ID ) ( DOT IDENTIFIER )*
 
 returnStmt   ::= RETURN
 exitStmt     ::= EXIT
@@ -538,15 +571,19 @@ private primaryExpr ::= INTEGER_LITERAL
                       | BOOL_LITERAL
                       | TIME_LITERAL
                       | MEMORY_ACCESS
-                      | QUOTED_IDENTIFIER       // "TagName" — TIA Portal global tag
-                      | LOCAL_VAR_ID            // #varName — TIA Portal local variable
                       | NIL                     // ponteiro nulo
                       | EN | ENO | OK           // flags predefinidas
                       | LPAREN expression RPAREN
                       | nameCallExpr
 
-// Identificador simples, acesso a membro, chamada de funcao ou acesso a array
-// A parte LPAREN e opcional: cobre tanto ref (foo.bar) quanto call (foo.bar(args))
-// Tambem cobre: FB10.DB20(params) — chamada global de FB
-private qualifiedName ::= IDENTIFIER ( DOT IDENTIFIER )*
+// qualifiedName aceita IDENTIFIER, QUOTED_IDENTIFIER ou LOCAL_VAR_ID como raiz,
+// com cadeia opcional de `.IDENTIFIER`. Cobre casos TIA Portal comuns:
+//   foo                                  ← identificador simples
+//   foo.bar                              ← acesso a membro
+//   "DB_Name"                            ← instance DB global (bare)
+//   "DB_Name".o_State                    ← leitura de saida de instance DB
+//   "DB_Name".FB_Name                    ← referencia qualificada (p/ chamada)
+//   #localVar.field                      ← variavel local com membro
+// nameCallExpr adiciona LPAREN opcional (chamada) e LBRACKET opcional (array).
+private qualifiedName ::= ( IDENTIFIER | QUOTED_IDENTIFIER | LOCAL_VAR_ID ) ( DOT IDENTIFIER )*
 private nameCallExpr  ::= qualifiedName ( LPAREN argList? RPAREN )? ( LBRACKET expression RBRACKET )*

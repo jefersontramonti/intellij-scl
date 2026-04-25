@@ -85,4 +85,99 @@ object SclSpacingBuilder {
             // ── RANGE (..) ────────────────────────────────────────────────────
             // "ARRAY[1..10]" → sem espaços em volta de ".."
             .around(SclTypes.DOTDOT).none()
+
+            // ═════════════════════════════════════════════════════════════════
+            // QUEBRAS DE LINHA ESTRUTURAIS — lineBreakInCode() força newline
+            // obrigatório entre elementos independente do layout de entrada.
+            // Sem estas regras, o formatter mantém tudo na mesma linha se o
+            // usuário escreveu assim (ou colapsa em alguns casos).
+            // ═════════════════════════════════════════════════════════════════
+
+            // ── TYPE / STRUCT (UDT) ───────────────────────────────────────────
+            // Estrutura PSI (blockName é private → name é filho direto de typeDef):
+            //   typeDecl  → TYPE typeDef* END_TYPE
+            //   typeDef   → (QUOTED_IDENTIFIER | IDENTIFIER) structDecl
+            //   structDecl→ STRUCT structField* END_STRUCT
+            //
+            // Resultado esperado:
+            //   TYPE "Nome"           ← nível 0
+            //       STRUCT            ← nível 1 (line break antes do STRUCT_DECL)
+            //           campo : T;    ← nível 2 (line break após STRUCT, entre fields)
+            //       END_STRUCT        ← nível 1 (line break antes do END_STRUCT)
+            //   END_TYPE              ← nível 0 (line break antes do END_TYPE)
+            //
+            // .betweenInside é o mais preciso: casa só quando child1=name e
+            // child2=STRUCT_DECL DENTRO de typeDef — preserva o formato de alias
+            // (TYPE "MyInt" : INT; END_TYPE) em uma única linha.
+            .betweenInside(SclTypes.QUOTED_IDENTIFIER, SclTypes.STRUCT_DECL, SclTypes.TYPE_DEF).lineBreakInCode()
+            .betweenInside(SclTypes.IDENTIFIER, SclTypes.STRUCT_DECL, SclTypes.TYPE_DEF).lineBreakInCode()
+            .afterInside(SclTypes.STRUCT, SclTypes.STRUCT_DECL).lineBreakInCode()
+            .beforeInside(SclTypes.END_STRUCT, SclTypes.STRUCT_DECL).lineBreakInCode()
+            .between(SclTypes.STRUCT_FIELD, SclTypes.STRUCT_FIELD).lineBreakInCode()
+            .beforeInside(SclTypes.END_TYPE, SclTypes.TYPE_DECL).lineBreakInCode()
+            // Line break entre typeDefs consecutivos (múltiplos UDTs em um único
+            // TYPE...END_TYPE, forma SCLV4 clássica).
+            .afterInside(SclTypes.TYPE_DEF, SclTypes.TYPE_DECL).lineBreakInCode()
+
+            // ── Cabeçalho de bloco / atributos TIA Portal { S7_... } ──────────
+            // FUNCTION_BLOCK "Nome"
+            // { S7_Optimized_Access := 'TRUE' }   ← atributos em linha própria
+            .before(SclTypes.LBRACE).lineBreakInCode()
+            .after(SclTypes.RBRACE).lineBreakInCode()
+
+            // ── Seções VAR / CONST ────────────────────────────────────────────
+            // Seção em linha própria; primeiro decl após a keyword; decls
+            // separados por newline; END_VAR/END_CONST também em linha própria.
+            .before(SclTypes.VAR_SECTION).lineBreakInCode()
+            .before(SclTypes.CONST_SECTION).lineBreakInCode()
+            .after(SclTypes.VAR).lineBreakInCode()
+            .after(SclTypes.VAR_INPUT).lineBreakInCode()
+            .after(SclTypes.VAR_OUTPUT).lineBreakInCode()
+            .after(SclTypes.VAR_IN_OUT).lineBreakInCode()
+            .after(SclTypes.VAR_STATIC).lineBreakInCode()
+            .after(SclTypes.VAR_TEMP).lineBreakInCode()
+            .after(SclTypes.VAR_CONSTANT).lineBreakInCode()
+            .after(SclTypes.CONST).lineBreakInCode()
+            .before(SclTypes.END_VAR).lineBreakInCode()
+            .before(SclTypes.END_CONST).lineBreakInCode()
+            .between(SclTypes.VAR_DECL, SclTypes.VAR_DECL).lineBreakInCode()
+            .between(SclTypes.CONST_DECL, SclTypes.CONST_DECL).lineBreakInCode()
+
+            // ── BEGIN ... END_* de FB/FC/OB/DB ────────────────────────────────
+            .before(SclTypes.BEGIN).lineBreakInCode()
+            .after(SclTypes.BEGIN).lineBreakInCode()
+            .before(SclTypes.END_FUNCTION_BLOCK).lineBreakInCode()
+            .before(SclTypes.END_FUNCTION).lineBreakInCode()
+            .before(SclTypes.END_ORGANIZATION_BLOCK).lineBreakInCode()
+            .before(SclTypes.END_DATA_BLOCK).lineBreakInCode()
+
+            // ── Controle de fluxo: corpo em linhas próprias ───────────────────
+            // IF cond THEN\n body\n ELSIF ...\n ELSE ...\n END_IF
+            .after(SclTypes.THEN).lineBreakInCode()
+            .after(SclTypes.DO).lineBreakInCode()
+            .after(SclTypes.OF).lineBreakInCode()
+            .before(SclTypes.ELSIF_CLAUSE).lineBreakInCode()
+            .before(SclTypes.ELSE_CLAUSE).lineBreakInCode()
+            .before(SclTypes.CASE_ALT).lineBreakInCode()
+            .before(SclTypes.CASE_ELSE_CLAUSE).lineBreakInCode()
+            .before(SclTypes.END_IF).lineBreakInCode()
+            .before(SclTypes.END_FOR).lineBreakInCode()
+            .before(SclTypes.END_WHILE).lineBreakInCode()
+            .before(SclTypes.END_REPEAT).lineBreakInCode()
+            .before(SclTypes.END_CASE).lineBreakInCode()
+            .before(SclTypes.END_REGION).lineBreakInCode()
+            .before(SclTypes.UNTIL).lineBreakInCode()
+
+            // ── Statements em linhas próprias dentro do statementList ─────────
+            // SEMICOLON aqui está DIRETAMENTE em statementList (statement é
+            // regra private, então assignStmt/callStmt e o SEMICOLON final
+            // aparecem como filhos diretos). afterInside() escopa o newline
+            // apenas ao contexto statementList, não dentro de varDecl.
+            .afterInside(SclTypes.SEMICOLON, SclTypes.STATEMENT_LIST).lineBreakInCode()
+            .afterInside(SclTypes.IF_STATEMENT, SclTypes.STATEMENT_LIST).lineBreakInCode()
+            .afterInside(SclTypes.FOR_STATEMENT, SclTypes.STATEMENT_LIST).lineBreakInCode()
+            .afterInside(SclTypes.WHILE_STATEMENT, SclTypes.STATEMENT_LIST).lineBreakInCode()
+            .afterInside(SclTypes.REPEAT_STATEMENT, SclTypes.STATEMENT_LIST).lineBreakInCode()
+            .afterInside(SclTypes.CASE_STATEMENT, SclTypes.STATEMENT_LIST).lineBreakInCode()
+            .afterInside(SclTypes.REGION_STMT, SclTypes.STATEMENT_LIST).lineBreakInCode()
 }

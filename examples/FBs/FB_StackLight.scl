@@ -16,106 +16,106 @@ FUNCTION_BLOCK "FB_StackLight"
 //  99  EMERGENCY    Vermelho PISCA | Reset fixo
 //=============================================================
 
-VAR_INPUT
-    i_State     : Int;   // Estado FSM (de FB_TankControl.o_State)
-    i_FaultCode : Int;   // Código de falha ativo
-END_VAR
+    VAR_INPUT
+        i_State : Int;   // Estado FSM (de FB_TankControl.o_State)
+        i_FaultCode : Int;   // Código de falha ativo
+    END_VAR
 
-VAR_OUTPUT
-    o_LightRed    : Bool;   // %Q1.0 — Torre vermelha
-    o_LightGreen  : Bool;   // %Q1.1 — Torre verde
-    o_LightYellow : Bool;   // %Q1.2 — Torre amarela
-    o_StartLight  : Bool;   // %Q1.3 — Luz botão Start
-    o_ResetLight  : Bool;   // %Q1.4 — Luz botão Reset
-    o_StopLight   : Bool;   // %Q1.5 — Luz botão Stop
-END_VAR
+    VAR_OUTPUT
+        o_LightRed1 : Bool;   // %Q1.0 — Torre vermelha
+        o_LightGreen : Bool;   // %Q1.1 — Torre verde
+        o_LightYellow : Bool;   // %Q1.2 — Torre amarela
+        o_StartLight : Bool;   // %Q1.3 — Luz botão Start
+        o_ResetLight : Bool;   // %Q1.4 — Luz botão Reset
+        o_StopLight : Bool;   // %Q1.5 — Luz botão Stop
+    END_VAR
 
-VAR
-    s_BlinkTimer : TON;    // Gerador de pisca 500 ms
-    s_BlinkState : Bool;   // Estado atual do pisca (TRUE = ON)
-    s_StartingTimer : TON;
-END_VAR
+    VAR
+        s_BlinkTimer : TON;    // Gerador de pisca 500 ms
+        s_BlinkState : Bool;   // Estado atual do pisca (TRUE = ON)
+        s_StartingTimer : TON;
+    END_VAR
 
 BEGIN
-    //==========================================================
-    // GERADOR DE PISCA — TON auto-oscillante
-    // Q=TRUE → IN=FALSE → timer para → Q=FALSE → IN=TRUE → reinicia
-    // Período: ~1 s (500 ms ON + 500 ms OFF)
-    //==========================================================
-    s_BlinkTimer(IN := NOT s_BlinkTimer.Q, PT := T#500MS);
-    s_BlinkState := s_BlinkTimer.Q;
-
-    s_StartingTimer(IN := i_State = 1,)
+//==========================================================
+// GERADOR DE PISCA — TON auto-oscillante
+// Q=TRUE → IN=FALSE → timer para → Q=FALSE → IN=TRUE → reinicia
+// Período: ~1 s (500 ms ON + 500 ms OFF)
+//==========================================================
+    s_BlinkTimer(IN := NOT s_BlinkState, PT := T#500MS);
+    IF s_BlinkTimer.Q THEN
+        s_BlinkState := NOT s_BlinkState;
+    END_IF;
+    s_StartingTimer(IN := i_State = 1);
 
     //==========================================================
     // INICIALIZA SAÍDAS — padrão OFF (evita latch de scan anterior)
     //==========================================================
-    o_LightRed    := FALSE;
-    o_LightGreen  := FALSE;
+    o_LightRed1 := FALSE;
+    o_LightGreen := FALSE;
     o_LightYellow := FALSE;
-    o_StartLight  := FALSE;
-    o_ResetLight  := FALSE;
-    o_StopLight   := FALSE;
+    o_StartLight := FALSE;
+    o_ResetLight := FALSE;
+    o_StopLight := FALSE;
 
     //==========================================================
     // MAPEAMENTO ESTADO → LUZES
     //==========================================================
     CASE i_State OF
 
-        //------------------------------------------------------
-        0: // IDLE — verde fixo, Start aceso (pronto para iniciar)
+    //------------------------------------------------------
+        0 : // IDLE — verde fixo, Start aceso (pronto para iniciar)
         //------------------------------------------------------
             o_LightGreen := TRUE;
             o_StartLight := TRUE;
 
-
-        //------------------------------------------------------
-        1: // STARTING — verde piscando, Stop aceso (pode cancelar)
+    //------------------------------------------------------
+        1 : // STARTING — verde piscando, Stop aceso (pode cancelar)
         //------------------------------------------------------
             o_LightGreen := s_BlinkState;
-            o_StopLight  := TRUE;
+            o_StopLight := TRUE;
 
-        //------------------------------------------------------
-        2: // FILLING — verde fixo, Stop aceso (pode parar)
+    //------------------------------------------------------
+        2 : // FILLING — verde fixo, Stop aceso (pode parar)
         //------------------------------------------------------
             o_LightGreen := TRUE;
-            o_StopLight  := TRUE;
+            o_StopLight := TRUE;
 
-        //------------------------------------------------------
-        3: // DRAINING — amarelo fixo, Stop aceso (pode cancelar dreno)
+    //------------------------------------------------------
+        3 : // DRAINING — amarelo fixo, Stop aceso (pode cancelar dreno)
         //------------------------------------------------------
             o_LightYellow := TRUE;
-            o_StopLight   := TRUE;
+            o_StopLight := TRUE;
 
-        //------------------------------------------------------
-        4: // TIMER_CTRL — verde piscando, Stop aceso
+    //------------------------------------------------------
+        4 : // TIMER_CTRL — verde piscando, Stop aceso
         //------------------------------------------------------
             o_LightGreen := s_BlinkState;
-            o_StopLight  := TRUE;
+            o_StopLight := TRUE;
 
-        //------------------------------------------------------
-        5: // HOLDING — verde fixo, Stop aceso (reservado)
+    //------------------------------------------------------
+        5 : // HOLDING — verde fixo, Stop aceso (reservado)
         //------------------------------------------------------
             o_LightGreen := TRUE;
-            o_StopLight  := TRUE;
+            o_StopLight := TRUE;
 
-        //------------------------------------------------------
-        98: // FAULT — amarelo piscando, Reset piscando
+    //------------------------------------------------------
+        98 : // FAULT — amarelo piscando, Reset piscando
         //------------------------------------------------------
             o_LightYellow := s_BlinkState;
-            o_ResetLight  := s_BlinkState;
+            o_ResetLight := s_BlinkState;
 
+    //------------------------------------------------------
+        99 : // EMERGENCY — vermelho piscando, Reset fixo
         //------------------------------------------------------
-        99: // EMERGENCY — vermelho piscando, Reset fixo
-        //------------------------------------------------------
-            o_LightRed   := s_BlinkState;
+            o_LightRed1 := s_BlinkState;
             o_ResetLight := TRUE;
 
-        //------------------------------------------------------
+    //------------------------------------------------------
         ELSE // Estado desconhecido — vermelho fixo como alerta
         //------------------------------------------------------
-            o_LightRed := TRUE;
+            o_LightRed1 := TRUE;
 
     END_CASE;
 
-END_FUNCTION_BLOCK;
+END_FUNCTION_BLOCK

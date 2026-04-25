@@ -113,7 +113,7 @@ class SclStructureViewElement(
     }
 
     /**
-     * FUNCTION_BLOCK: seções VAR não-vazias + CONST (na ordem do arquivo).
+     * FUNCTION_BLOCK: seções VAR não-vazias + CONST + BEGIN (corpo executável).
      */
     private fun buildChildrenForFB(fb: SclFunctionBlockDecl): Array<TreeElement> {
         val children = mutableListOf<TreeElement>()
@@ -124,11 +124,13 @@ class SclStructureViewElement(
                 children.add(SclVarSectionElement(section))
             }
         }
+        fb.statementList?.takeIf { it.hasInterestingStatements() }
+            ?.let { children.add(SclBodyElement(it)) }
         return children.toTypedArray()
     }
 
     /**
-     * FUNCTION: seções VAR não-vazias + nó de tipo de retorno.
+     * FUNCTION: seções VAR não-vazias + nó de tipo de retorno + BEGIN.
      */
     private fun buildChildrenForFC(fc: SclFunctionDecl): Array<TreeElement> {
         val children = mutableListOf<TreeElement>()
@@ -137,13 +139,14 @@ class SclStructureViewElement(
                 children.add(SclVarSectionElement(section))
             }
         }
-        // Tipo de retorno como nó especial (ex: "↩ REAL")
         children.add(SclReturnTypeElement(fc))
+        fc.statementList?.takeIf { it.hasInterestingStatements() }
+            ?.let { children.add(SclBodyElement(it)) }
         return children.toTypedArray()
     }
 
     /**
-     * ORGANIZATION_BLOCK: seções VAR não-vazias.
+     * ORGANIZATION_BLOCK: seções VAR não-vazias + BEGIN.
      */
     private fun buildChildrenForOB(ob: SclOrgBlockDecl): Array<TreeElement> {
         val children = mutableListOf<TreeElement>()
@@ -152,6 +155,8 @@ class SclStructureViewElement(
                 children.add(SclVarSectionElement(section))
             }
         }
+        ob.statementList?.takeIf { it.hasInterestingStatements() }
+            ?.let { children.add(SclBodyElement(it)) }
         return children.toTypedArray()
     }
 

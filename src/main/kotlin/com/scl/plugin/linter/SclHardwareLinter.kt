@@ -174,6 +174,10 @@ class SclHardwareLinter : LocalInspectionTool() {
         val stateVar = caseStmt.expression?.text?.trim()
             ?.takeIf { it.matches(Regex("[A-Za-z_#][A-Za-z0-9_]*")) } ?: return
 
+        // Só verificar deadlock quando a variável pertence a VAR ou VAR_STATIC.
+        // VAR_INPUT nunca deve ser atribuído dentro do FB — não é deadlock.
+        if (!isStateMachineVar(stateVar, caseStmt)) return
+
         for (alt in caseStmt.caseAltList) {
             val hasTransition = PsiTreeUtil
                 .findChildrenOfType(alt.statementList, SclAssignStmt::class.java)
@@ -190,6 +194,33 @@ class SclHardwareLinter : LocalInspectionTool() {
                 )
             }
         }
+    }
+
+    private fun isStateMachineVar(varName: String, context: PsiElement): Boolean {
+        val cleanName = varName.removePrefix("#")
+        var el: PsiElement? = context.parent
+        while (el != null) {
+            val sections: List<SclVarSection>? = when (el) {
+                is SclFunctionBlockDecl -> el.varSectionList
+                is SclFunctionDecl      -> el.varSectionList
+                is SclOrgBlockDecl      -> el.varSectionList
+                else                    -> null
+            }
+            if (sections != null) {
+                for (section in sections) {
+                    for (decl in section.varDeclList) {
+                        val declName = decl.node.firstChildNode?.text ?: continue
+                        if (declName.equals(cleanName, ignoreCase = true)) {
+                            val keyword = section.node.firstChildNode?.elementType
+                            return keyword == SclTypes.VAR || keyword == SclTypes.VAR_STATIC
+                        }
+                    }
+                }
+                return false  // declarado no bloco mas não em VAR/VAR_STATIC
+            }
+            el = el.parent
+        }
+        return false  // não encontrado — conservador: não reportar
     }
 
     // ─────────────────────────────────────────────────────────────────────────

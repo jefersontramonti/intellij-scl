@@ -202,6 +202,18 @@ class SclBlock(
             parentType in BLOCK_DECL_TYPES && childType == SclTypes.STATEMENT_LIST ->
                 Indent.getNormalIndent()
 
+            // ── Blocos principais: seções VAR/CONST recebem +4 ────────────────
+            // FUNCTION_BLOCK "Nome"
+            //     VAR_INPUT           ← nível 1 (indent +4)
+            //         i : Bool;       ← nível 2 (VAR_SECTION +4 + VAR_DECL +4)
+            //     END_VAR             ← nível 1 (CLOSING herda VAR_SECTION)
+            // BEGIN                   ← nível 0 (sem indent no BLOCK_DECL)
+            //     stmt;               ← nível 1 (STATEMENT_LIST +4)
+            // END_FUNCTION_BLOCK      ← nível 0 (CLOSING)
+            parentType in BLOCK_DECL_TYPES &&
+                (childType == SclTypes.VAR_SECTION || childType == SclTypes.CONST_SECTION) ->
+                Indent.getNormalIndent()
+
             // ── IF_STATEMENT: statementList direto (corpo after THEN) → +4 ────
             // elsifClause e elseClause → NONE (mesma linha que IF)
             parentType == SclTypes.IF_STATEMENT && childType == SclTypes.STATEMENT_LIST ->
@@ -248,8 +260,22 @@ class SclBlock(
             parentType == SclTypes.REGION_STMT && childType == SclTypes.STATEMENT_LIST ->
                 Indent.getNormalIndent()
 
-            // ── TYPE_DECL: typeDef filhos → +4 ───────────────────────────────
+            // ── TYPE_DECL → TYPE_DEF: SEM indent extra no typeDef ────────────
+            // typeDef começa com o nome que fica inline com TYPE:
+            //   TYPE "UDT_Name"        ← TYPE + nome na mesma linha
+            //       STRUCT             ← indent vem do TYPE_DEF → STRUCT_DECL abaixo
+            //   END_TYPE
+            // Aplicar NormalIndent no TYPE_DEF só engana o cálculo: como typeDef
+            // fica inline, esse indent nunca se propaga aos filhos em new line
+            // (o indent só conta a partir do ancestral que inicia a linha).
             parentType == SclTypes.TYPE_DECL && childType == SclTypes.TYPE_DEF ->
+                Indent.getNoneIndent()
+
+            // ── TYPE_DEF → STRUCT_DECL: +4 (nível 1) ─────────────────────────
+            // STRUCT_DECL fica em new line (line break forçado pelo SpacingBuilder).
+            // NormalIndent aqui posiciona STRUCT na coluna 4. Os structFields
+            // recebem +4 adicional via STRUCT_DECL → STRUCT_FIELD → coluna 8.
+            parentType == SclTypes.TYPE_DEF && childType == SclTypes.STRUCT_DECL ->
                 Indent.getNormalIndent()
 
             // ── CALL_STMT: argList → +4 (o bloco de argumentos, não RPAREN) ──

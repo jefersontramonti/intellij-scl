@@ -10,39 +10,37 @@ FUNCTION_BLOCK "FB_Diagnostic"
 // O índice avança automaticamente; ao atingir 19, volta a 0.
 //=============================================================
 
-VAR_INPUT
-    i_FaultCode : Int;   // Código de falha atual (0 = sem falha)
-    i_State     : Int;   // Estado FSM atual (para contexto futuro)
-    s_StartingTime : TON;
-END_VAR
+    VAR_INPUT
+        i_FaultCode : Int;   // Código de falha atual (0 = sem falha)
+        i_State : Int;   // Estado FSM atual (para contexto futuro)
+        s_StartingTime : TON;
+    END_VAR
 
-VAR_OUTPUT
-    o_FaultCount : DInt;   // Total acumulado de falhas registradas
-    o_LastFault  : Int;    // Último código de falha registrado
-END_VAR
-//(**)
-VAR
-    s_FaultHistory  : ARRAY[0..19] OF Int;   // Ring buffer 20 entradas
-    s_BufferIndex   : Int  := 0;             // Próxima posição de escrita
-    s_FaultCount    : DInt := 0;             // Contador cumulativo
-    s_LastFaultCode : Int  := 0;             // Último código registrado
-    s_PrevFaultCode : Int  := 0;             // Código da varredura anterior
-END_VAR
+    VAR_OUTPUT
+        o_FaultCount : DInt;   // Total acumulado de falhas registradas
+        o_LastFault : Int;    // Último código de falha registrado
+    END_VAR
+    VAR
+        s_FaultHistory : ARRAY[0..19] OF
+        Int;   // Ring buffer 20 entradas
+        s_BufferIndex : Int := 0;             // Próxima posição de escrita
+        s_FaultCount : DInt := 0;             // Contador cumulativo
+        s_LastFaultCode3 : Int := 0;             // Último código registrado
+        s_PrevFaultCode : Int := 0;             // Código da varredura anterior
+    END_VAR
 
 BEGIN
-    //==========================================================
-    // DETECÇÃO DE NOVA FALHA
-    // Condição: código mudou E não é zero
-    //   - 0 → X  : nova falha
-    //   - X → Y  : falha diferente (sem reset entre elas)
-    // Não registra o retorno a 0 (falha limpa não é evento)
-    //==========================================================
-
-    s_StartingTime := TON(TOD);
+//==========================================================
+// DETECÇÃO DE NOVA FALHA
+// Condição: código mudou E não é zero
+//   - 0 → X  : nova falha
+//   - X → Y  : falha diferente (sem reset entre elas)
+// Não registra o retorno a 0 (falha limpa não é evento)
+//==========================================================
 
     IF (i_FaultCode <> 0) AND (i_FaultCode <> s_PrevFaultCode) THEN
 
-        // Escreve no ring buffer na posição atual
+    // Escreve no ring buffer na posição atual
         s_FaultHistory[s_BufferIndex] := i_FaultCode;
 
         // Avança índice circular (0..19)
@@ -53,8 +51,9 @@ BEGIN
         END_IF;
 
         // Atualiza contadores e último código
-        s_FaultCount    := s_FaultCount + 1;
-        s_LastFaultCode := i_FaultCode;
+        s_FaultCount := s_FaultCount + 1;
+        s_LastFaultCode3 := i_FaultCode;
+
 
     END_IF;
 
@@ -65,6 +64,6 @@ BEGIN
     // OUTPUTS
     //==========================================================
     o_FaultCount := s_FaultCount;
-    o_LastFault  := s_LastFaultCode;
+    o_LastFault := s_LastFaultCode3;
 
 END_FUNCTION_BLOCK

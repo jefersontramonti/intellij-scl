@@ -35,6 +35,15 @@
 
     <depends>com.intellij.modules.platform</depends>
 
+    <!-- ── Fase 7: MCP Server ─────────────────────────────────────────────────
+         Requer IntelliJ 2024.3+. Expõe ferramentas SCL ao Claude Code via MCP.
+         ──────────────────────────────────────────────────────────────────── -->
+    <depends>com.intellij.mcpServer</depends>
+
+    <extensions defaultExtensionNs="com.intellij.mcpServer">
+        <mcpToolset implementation="com.scl.plugin.mcp.SclToolset"/>
+    </extensions>
+
     <extensions defaultExtensionNs="com.intellij">
 
         <!-- ── File type ──────────────────────────────────────────────────
@@ -134,29 +143,37 @@
              ──────────────────────────────────────────────────────────── -->
         <defaultLiveTemplates file="/liveTemplates/SCL.xml"/>
 
-        <!-- ── Fase 4: Hardware Target — serviço de projeto ────────────────────
+        <!-- ── Fase 4A: Hardware Target — serviço de projeto ──────────────────
              Persiste S7-1200 / S7-1500 em .idea/sclHardwareTarget.xml.
              ──────────────────────────────────────────────────────────── -->
         <projectService
             serviceImplementation="com.scl.plugin.linter.SclHardwareTargetService"/>
 
-        <!-- ── Fase 4: Hardware Target — widget na status bar ───────────────
+        <!-- ── Fase 4B: CPU Settings — serviço com família + firmware ────────
+             Persiste CpuFamily + FirmwareVersion em .idea/sclCpuSettings.xml.
+             Usado pelas 6 inspeções da Fase 4B.
+             ──────────────────────────────────────────────────────────── -->
+        <projectService
+            serviceImplementation="com.scl.plugin.linter.SclCpuSettings"/>
+
+        <!-- ── Fase 4A: Hardware Target — widget na status bar ───────────────
              Exibe "SCL: S7-1200" / "SCL: S7-1500"; clique troca o target.
              ──────────────────────────────────────────────────────────── -->
         <statusBarWidgetFactory
             implementation="com.scl.plugin.linter.SclHardwareStatusBarWidgetFactory"
             id="SclHardwareTarget"/>
 
-        <!-- ── Fase 4: Linter HW-Aware ───────────────────────────────────────
-             LocalInspectionTool (preferível a lang.annotator para linters
-             de linguagens customizadas no IntelliJ Platform 2024+).
-             Aparece em Settings → Editor → Inspections → SCL.
-             5 regras:
-               1. TIME_TO_DINT → ERROR no S7-1200
-               2. LREAL        → WARNING no S7-1200 (quick fix: → REAL)
-               3. %Mx conflito → ERROR (ambos HW)
-               4. Blink bug    → WARNING (ambos HW)
-               5. CASE deadlock → WARNING (ambos HW)
+        <!-- ── Fase 4B: Settings → Tools → SCL CPU Target ───────────────────
+             Dropdown CPU Family + Firmware para configurar as inspeções.
+             ──────────────────────────────────────────────────────────── -->
+        <projectConfigurable
+            parentId="tools"
+            instance="com.scl.plugin.linter.SclCpuConfigurable"
+            displayName="SCL CPU Target"
+            id="com.scl.plugin.linter.SclCpuConfigurable"/>
+
+        <!-- ── Fase 4A: Linter HW-Aware (legado) ────────────────────────────
+             5 regras: TIME_TO_DINT, LREAL, %Mx conflito, blink bug, CASE deadlock.
              ──────────────────────────────────────────────────────────── -->
         <localInspection
             language="SCL"
@@ -166,6 +183,64 @@
             enabledByDefault="true"
             level="WARNING"
             implementationClass="com.scl.plugin.linter.SclHardwareLinter"/>
+
+        <!-- ── Fase 4B: Inspeções Estáticas SCL ─────────────────────────────
+             Aparecem em Settings → Editor → Inspections → SCL.
+             ──────────────────────────────────────────────────────────── -->
+
+        <localInspection
+            language="SCL"
+            shortName="SclUnsupportedType"
+            displayName="Unsupported data type for target CPU"
+            groupName="SCL"
+            enabledByDefault="true"
+            level="ERROR"
+            implementationClass="com.scl.plugin.linter.inspections.SclUnsupportedTypeInspection"/>
+
+        <localInspection
+            language="SCL"
+            shortName="SclAbsoluteAddress"
+            displayName="Absolute memory address used"
+            groupName="SCL"
+            enabledByDefault="true"
+            level="WARNING"
+            implementationClass="com.scl.plugin.linter.inspections.SclAbsoluteAddressInspection"/>
+
+        <localInspection
+            language="SCL"
+            shortName="SclBooleanIf"
+            displayName="Unnecessary IF for boolean assignment"
+            groupName="SCL"
+            enabledByDefault="true"
+            level="WARNING"
+            implementationClass="com.scl.plugin.linter.inspections.SclBooleanIfInspection"/>
+
+        <localInspection
+            language="SCL"
+            shortName="SclTempVarUninitialized"
+            displayName="VAR_TEMP read before assignment"
+            groupName="SCL"
+            enabledByDefault="true"
+            level="WARNING"
+            implementationClass="com.scl.plugin.linter.inspections.SclTempVarInspection"/>
+
+        <localInspection
+            language="SCL"
+            shortName="SclForRealIndex"
+            displayName="FOR loop index must be integer type"
+            groupName="SCL"
+            enabledByDefault="true"
+            level="ERROR"
+            implementationClass="com.scl.plugin.linter.inspections.SclForIndexTypeInspection"/>
+
+        <localInspection
+            language="SCL"
+            shortName="SclCaseMissingElse"
+            displayName="CASE statement missing ELSE branch"
+            groupName="SCL"
+            enabledByDefault="true"
+            level="WARNING"
+            implementationClass="com.scl.plugin.linter.inspections.SclCaseElseInspection"/>
 
         <!-- ── Hover Documentation (API moderna 2023.1+) ─────────────────────
              Exibe tooltip ao passar o mouse sobre variáveis SCL declaradas.
@@ -205,6 +280,54 @@
         <lang.formatter
             language="SCL"
             implementationClass="com.scl.plugin.formatting.SclFormattingModelBuilder"/>
+
+        <!-- ── SCL Project View Pane (aba "SCL" no painel de projeto) ────────
+             Organiza arquivos .scl por tipo de bloco:
+             Function Blocks / Functions / Organization Blocks / Data Types.
+             ──────────────────────────────────────────────────────────── -->
+        <projectViewPane
+            implementation="com.scl.plugin.view.SclProjectViewPane"/>
+
+        <!-- ── SCL Project View Decorator ────────────────────────────────────
+             Adiciona ícone de tipo (FB/FC/OB/UDT) nos arquivos .scl na
+             Project View padrão.
+             ──────────────────────────────────────────────────────────── -->
+        <projectViewNodeDecorator
+            implementation="com.scl.plugin.view.SclProjectViewNodeDecorator"/>
+
+        <!-- ── Fase 6: Go to Definition (Ctrl+Click / Ctrl+B) ──────────────────
+             GotoDeclarationHandler: offset-based, não depende de pattern
+             matching no PsiReferenceContributor (que não chama providers para
+             LeafPsiElement de linguagens Grammar-Kit em IntelliJ 2026.1).
+             ──────────────────────────────────────────────────────────── -->
+        <gotoDeclarationHandler
+            implementation="com.scl.plugin.reference.SclGotoDeclarationHandler"/>
+
+        <!-- ── Fase 6: Rename (Shift+F6) ──────────────────────────────────────────
+             Usa resolução offset-based (igual ao GotoDeclarationHandler) para
+             funcionar tanto na declaração quanto em usos, contornando o bug do
+             PsiReferenceContributor em IntelliJ 2026.1 que não chama providers
+             para LeafPsiElement de linguagens Grammar-Kit.
+             ──────────────────────────────────────────────────────────── -->
+        <renameHandler
+            implementation="com.scl.plugin.reference.SclRenameHandler"/>
+
+        <!-- PsiReferenceContributor mantido para compatibilidade futura.       -->
+        <psi.referenceContributor
+            language="SCL"
+            implementation="com.scl.plugin.reference.SclReferenceContributor"/>
+
+        <!-- ── Fase 6: Find Usages (Alt+F7) ────────────────────────────────────
+             SclFindUsagesProvider: word scanner + classificação dos elementos.
+             SclUsagesSearcher: busca direta via PsiSearchHelper (word index)
+             sem depender de getReferences() em leaf tokens.
+             ──────────────────────────────────────────────────────────── -->
+        <lang.findUsagesProvider
+            language="SCL"
+            implementationClass="com.scl.plugin.findUsages.SclFindUsagesProvider"/>
+
+        <referencesSearch
+            implementation="com.scl.plugin.findUsages.SclUsagesSearcher"/>
 
     </extensions>
 

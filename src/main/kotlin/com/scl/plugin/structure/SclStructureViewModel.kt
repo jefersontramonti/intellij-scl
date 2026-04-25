@@ -12,14 +12,16 @@ import com.intellij.ide.util.treeView.smartTree.TreeElement
 import com.intellij.openapi.editor.Editor
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
+import com.scl.plugin.psi.SclCaseStatement
+import com.scl.plugin.psi.SclConstSection
 import com.scl.plugin.psi.SclFunctionBlockDecl
 import com.scl.plugin.psi.SclFunctionDecl
 import com.scl.plugin.psi.SclOrgBlockDecl
+import com.scl.plugin.psi.SclRegionStmt
 import com.scl.plugin.psi.SclTypeDef
 import com.scl.plugin.psi.SclTypes
 import com.scl.plugin.psi.SclVarDecl
 import com.scl.plugin.psi.SclVarSection
-import com.scl.plugin.psi.SclConstSection
 
 /**
  * Modelo do Structure View SCL.
@@ -42,6 +44,8 @@ class SclStructureViewModel(
         SclOrgBlockDecl::class.java,
         SclTypeDef::class.java,
         SclVarDecl::class.java,
+        SclRegionStmt::class.java,
+        SclCaseStatement::class.java,
     )
 
     // ── Variáveis são sempre folhas ───────────────────────────────────────────

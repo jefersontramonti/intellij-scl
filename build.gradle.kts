@@ -48,6 +48,9 @@ dependencies {
         // IntelliJ IDEA 2026.1 — unificado Community+Ultimate desde 2025.3
         intellijIdea("2026.1")
 
+        // MCP Server — embutido desde IntelliJ 2024.3, usado na Fase 7
+        bundledPlugin("com.intellij.mcpServer")
+
         // Framework de testes da plataforma
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
     }

@@ -5,9 +5,9 @@
 
 FUNCTION_BLOCK FB_TankControl
 VAR_INPUT
-    xStart      : BOOL;    // Comando de inicio
-    xStop       : BOOL;    // Comando de parada
-    rSetpoint   : REAL;    // Setpoint de nivel (0.0 a 10.0)
+    xStart1 : BOOL;    // Comando de inicio
+    xStop : BOOL;    // Comando de parada
+    rSetpoint : REAL;    // Setpoint de nivel (0.0 a 10.0)
 END_VAR
 
 VAR_OUTPUT
@@ -16,13 +16,13 @@ VAR_OUTPUT
 END_VAR
 
 VAR_STATIC
-    s_State     : INT;     // Estado atual da FSM
-    rLevel      : REAL;    // Nivel atual do tanque
-    tFillTimer  : TON;     // Timer de enchimento
+    s_State1 : INT;     // Estado atual da FSM
+    rLevel : REAL;    // Nivel atual do tanque
+    tFillTimer : TON;     // Timer de enchimento
 END_VAR
 
 VAR_TEMP
-    tElapsed    : TIME;    // Tempo decorrido (temporaria)
+    tElapsed1    : TIME;    // Tempo decorrido (temporaria)
 END_VAR
 
 (* ─── Logica principal — FSM de 3 estados ─────────────────────────────── *)
