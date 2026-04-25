@@ -1,7 +1,9 @@
 package com.scl.plugin.wizard
 
 import com.intellij.ide.util.projectWizard.WizardContext
+import com.intellij.ide.wizard.AbstractNewProjectWizardStep
 import com.intellij.ide.wizard.GeneratorNewProjectWizard
+import com.intellij.ide.wizard.NewProjectWizardBaseStep
 import com.intellij.ide.wizard.NewProjectWizardStep
 import com.intellij.openapi.observable.properties.PropertyGraph
 import com.intellij.openapi.project.Project
@@ -16,17 +18,25 @@ class SclNewProjectWizard : GeneratorNewProjectWizard {
     override val name = "SCL"
     override val icon: Icon = SclIcons.FUNCTION_BLOCK
 
-    override fun createStep(context: WizardContext): NewProjectWizardStep =
-        SclNewProjectWizardStep(context)
+    override fun createStep(context: WizardContext): NewProjectWizardStep {
+        // Root step wraps the WizardContext and feeds into NewProjectWizardBaseStep
+        // (name / location / Git fields) followed by our content step.
+        val root = object : NewProjectWizardStep {
+            override val context       = context
+            override val data          = UserDataHolderBase()
+            override val propertyGraph = PropertyGraph()
+            override val keywords      = NewProjectWizardStep.Keywords()
+            override fun setupUI(builder: Panel) {}
+            override fun setupProject(project: Project) {}
+        }
+        val base = NewProjectWizardBaseStep(root)
+        return SclNewProjectWizardStep(base)
+    }
 }
 
 private class SclNewProjectWizardStep(
-    override val context: WizardContext
-) : NewProjectWizardStep {
-
-    override val data          = UserDataHolderBase()
-    override val propertyGraph = PropertyGraph()
-    override val keywords      = NewProjectWizardStep.Keywords()
+    parent: NewProjectWizardStep
+) : AbstractNewProjectWizardStep(parent) {
 
     override fun setupUI(builder: Panel) {}
 
