@@ -15,11 +15,11 @@ class SclProjectGenerator(
 
     fun generate() {
         ApplicationManager.getApplication().runWriteAction {
-            // Criar todas as pastas e guardar referências dentro do mesmo write action
-            val fbsDir  = root.createChildDirectory(this, "FBs")
-            val fcsDir  = root.createChildDirectory(this, "FCs")
-            val obsDir  = root.createChildDirectory(this, "OBs")
-            val udtsDir = root.createChildDirectory(this, "UDTs")
+            // getOrCreate: evita IOException se a pasta já existe no VFS
+            val fbsDir  = root.getOrCreateDir("FBs")
+            val fcsDir  = root.getOrCreateDir("FCs")
+            val obsDir  = root.getOrCreateDir("OBs")
+            val udtsDir = root.getOrCreateDir("UDTs")
 
             when (template) {
                 SclModuleBuilder.ProjectTemplate.EMPTY -> Unit
@@ -52,8 +52,11 @@ class SclProjectGenerator(
         }
     }
 
+    private fun VirtualFile.getOrCreateDir(name: String): VirtualFile =
+        findChild(name) ?: createChildDirectory(this@SclProjectGenerator, name)
+
     private fun createFile(dir: VirtualFile, name: String, content: String) {
-        val file = dir.createChildData(this, name)
+        val file = dir.findChild(name) ?: dir.createChildData(this, name)
         file.setBinaryContent(content.toByteArray(Charsets.UTF_8))
     }
 }
