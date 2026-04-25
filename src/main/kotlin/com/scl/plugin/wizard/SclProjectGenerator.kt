@@ -15,10 +15,11 @@ class SclProjectGenerator(
 
     fun generate() {
         ApplicationManager.getApplication().runWriteAction {
+            // Criar todas as pastas e guardar referências dentro do mesmo write action
             val fbsDir  = root.createChildDirectory(this, "FBs")
             val fcsDir  = root.createChildDirectory(this, "FCs")
             val obsDir  = root.createChildDirectory(this, "OBs")
-            root.createChildDirectory(this, "UDTs")
+            val udtsDir = root.createChildDirectory(this, "UDTs")
 
             when (template) {
                 SclModuleBuilder.ProjectTemplate.EMPTY -> Unit
@@ -27,7 +28,6 @@ class SclProjectGenerator(
                     createFile(fbsDir,  "FB_Main.scl",    SclTemplates.functionBlock("FB_Main"))
                     createFile(fcsDir,  "FC_Utils.scl",   SclTemplates.function("FC_Utils"))
                     createFile(obsDir,  "OB_Main.scl",    SclTemplates.organizationBlock("OB_Main"))
-                    val udtsDir = root.findChild("UDTs") ?: return@runWriteAction
                     createFile(udtsDir, "UDT_Config.scl", SclTemplates.udt("UDT_Config"))
                 }
 
