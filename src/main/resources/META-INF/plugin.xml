@@ -329,6 +329,13 @@
         <referencesSearch
             implementation="com.scl.plugin.findUsages.SclUsagesSearcher"/>
 
+        <!-- ── New Project Wizard ────────────────────────────────────────────
+             Adiciona "SCL" na lista de linguagens do File → New Project.
+             Cria FB_Main.scl de exemplo na raiz do projeto.
+             ──────────────────────────────────────────────────────────── -->
+        <newProjectWizard.generator
+            implementation="com.scl.plugin.wizard.SclNewProjectWizard"/>
+
     </extensions>
 
 </idea-plugin>
