@@ -30,7 +30,7 @@ import com.scl.plugin.psi.SclTypes;
 %ignorecase
 
 /* Estados do lexer */
-%state BLOCK_COMMENT_STATE
+%xstate BLOCK_COMMENT_STATE
 
 %%
 

@@ -244,9 +244,7 @@ private blockAttr ::= IDENTIFIER ASSIGN expression
 // SEMICOLON? — TIA Portal nao exige ; apos END_FUNCTION_BLOCK, mas tolera
 functionBlockDecl ::= FUNCTION_BLOCK blockName
                       blockAttributes*
-                      constSection?
-                      labelSection?
-                      varSection*
+                      blockDeclSection*
                       (BEGIN statementList)?
                       END_FUNCTION_BLOCK SEMICOLON? {
   pin=1
@@ -258,9 +256,7 @@ functionBlockDecl ::= FUNCTION_BLOCK blockName
 // Retorno pode ser tipo de dados ou VOID (Apendice C.1)
 functionDecl ::= FUNCTION blockName COLON (VOID | typeRef)
                  blockAttributes*
-                 constSection?
-                 labelSection?
-                 varSection*
+                 blockDeclSection*
                  (BEGIN statementList)?
                  END_FUNCTION SEMICOLON? {
   pin=1
@@ -271,15 +267,17 @@ functionDecl ::= FUNCTION blockName COLON (VOID | typeRef)
 // OB Declaration Section: Constants? Labels? Temp?
 orgBlockDecl ::= ORGANIZATION_BLOCK blockName
                  blockAttributes*
-                 constSection?
-                 labelSection?
-                 varSection*
+                 blockDeclSection*
                  (BEGIN statementList)?
                  END_ORGANIZATION_BLOCK SEMICOLON? {
   pin=1
   mixin="com.scl.plugin.psi.SclNamedElementImpl"
   implements="com.scl.plugin.psi.SclNamedElement"
 }
+
+// Seção de declaração genérica: VAR, CONST ou LABEL em qualquer ordem
+// private: Grammar-Kit inlina a regra no pai, sem PSI node intermediário
+private blockDeclSection ::= varSection | constSection | labelSection
 
 // DB Declaration Section: pode ser Interface (varSection), STRUCT ou UDT ref
 // BEGIN inicia secao de atribuicoes (inicializadores)
@@ -293,9 +291,11 @@ dataBlockDecl ::= DATA_BLOCK blockName
   implements="com.scl.plugin.psi.SclNamedElement"
 }
 
-// Secao de atribuicoes do DB: IDENTIFIER := expr ;
+// Secao de atribuicoes do DB: lvalue qualificado := expr ;
+// Suporta: Motor1.Name :=  e  ProcessArray[0] :=
 dbAssignList ::= dbAssign*
-dbAssign     ::= IDENTIFIER ASSIGN expression SEMICOLON
+dbAssign     ::= IDENTIFIER dbLValueSuffix* ASSIGN expression SEMICOLON
+private dbLValueSuffix ::= DOT IDENTIFIER | LBRACKET expression (COMMA expression)* RBRACKET
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Secao CONST (SCLV4 Apendice C.2 — Constant Subsection)
@@ -309,7 +309,7 @@ constSection ::= CONST constDecl* END_CONST {
   pin=1
 }
 
-constDecl ::= IDENTIFIER (COLON typeRef)? ASSIGN expression SEMICOLON
+constDecl ::= varName (COLON typeRef)? ASSIGN expression SEMICOLON
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Secao LABEL (SCLV4 Sec. 15.9 + Apendice C.2 — Jump Label Subsection)
@@ -354,7 +354,7 @@ structDecl ::= STRUCT structField* END_STRUCT {
   pin=1
 }
 
-structField ::= IDENTIFIER COLON typeRef ( ASSIGN expression )? SEMICOLON {
+structField ::= varName COLON typeRef ( ASSIGN expression )? SEMICOLON {
   mixin="com.scl.plugin.psi.SclNamedElementImpl"
   implements="com.scl.plugin.psi.SclNamedElement"
 }
@@ -369,9 +369,15 @@ varSection ::= varKeyword varDecl* END_VAR {
 
 private varKeyword ::= VAR | VAR_INPUT | VAR_OUTPUT | VAR_IN_OUT | VAR_STATIC | VAR_TEMP | VAR_CONSTANT
 
+// Nomes de variavel/campo: IDENTIFIER + keywords de tipo de parametro que o TIA Portal
+// permite usar como nomes (Counter, Timer, Pointer...). private = sem PSI wrapper.
+private varName ::= IDENTIFIER
+                  | COUNTER | TIMER | POINTER | ANY | VOID
+                  | BLOCK_FB | BLOCK_FC | BLOCK_DB | BLOCK_SDB | BLOCK_SFB | BLOCK_SFC
+
 // Declaracao de variavel: pode ser simples ou instancia de FB local
-// pin=1: compromete ao ver IDENTIFIER, evita nos vazios em erro de parsing
-varDecl ::= IDENTIFIER COLON typeRef ( ASSIGN expression )? SEMICOLON {
+// pin=1: compromete ao ver varName, evita nos vazios em erro de parsing
+varDecl ::= varName COLON typeRef ( ASSIGN expression )? SEMICOLON {
   pin=1
   mixin="com.scl.plugin.psi.SclNamedElementImpl"
   implements="com.scl.plugin.psi.SclNamedElement"
@@ -382,7 +388,7 @@ varDecl ::= IDENTIFIER COLON typeRef ( ASSIGN expression )? SEMICOLON {
 // Apendice C.3: Data Types in SCL
 // ─────────────────────────────────────────────────────────────────────────────
 
-typeRef ::= arrayTypeRef | stringTypeRef | paramTypeRef | builtinType | IDENTIFIER
+typeRef ::= arrayTypeRef | stringTypeRef | structDecl | paramTypeRef | builtinType | IDENTIFIER
 
 // ARRAY[x..y] OF tipo — ate 6 dimensoes (SCLV4 Apendice C.3)
 arrayTypeRef ::= ARRAY LBRACKET arrayDimension (COMMA arrayDimension)* RBRACKET OF typeRef {
@@ -486,7 +492,7 @@ labeledStmt ::= IDENTIFIER COLON statement {
 
 // lvalue: lado esquerdo de atribuicao — sem chamada de funcao
 private lvalue ::= ( IDENTIFIER | MEMORY_ACCESS | QUOTED_IDENTIFIER | LOCAL_VAR_ID ) lvalueSuffix*
-private lvalueSuffix ::= DOT IDENTIFIER | LBRACKET expression RBRACKET
+private lvalueSuffix ::= DOT IDENTIFIER | LBRACKET expression (COMMA expression)* RBRACKET
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Controle de fluxo — geram PSI nodes para FoldingBuilder
@@ -497,7 +503,7 @@ ifStatement ::= IF expression THEN statementList elsifClause* elseClause? END_IF
 }
 
 elsifClause ::= ELSIF expression THEN statementList { pin=1 }
-elseClause  ::= ELSE statementList { pin=1 }
+elseClause  ::= ELSE COLON? statementList { pin=1 }
 
 caseStatement ::= CASE expression OF caseAlt* caseElseClause? END_CASE {
   pin=1
@@ -505,7 +511,7 @@ caseStatement ::= CASE expression OF caseAlt* caseElseClause? END_CASE {
 
 caseAlt        ::= caseLabel ( COMMA caseLabel )* COLON statementList
 caseLabel      ::= expression ( DOTDOT expression )?
-caseElseClause ::= ELSE statementList { pin=1 }
+caseElseClause ::= ELSE COLON? statementList { pin=1 }
 
 forStatement ::= FOR IDENTIFIER ASSIGN expression TO expression ( BY expression )? DO statementList END_FOR {
   pin=1
@@ -586,4 +592,4 @@ private primaryExpr ::= INTEGER_LITERAL
 //   #localVar.field                      ← variavel local com membro
 // nameCallExpr adiciona LPAREN opcional (chamada) e LBRACKET opcional (array).
 private qualifiedName ::= ( IDENTIFIER | QUOTED_IDENTIFIER | LOCAL_VAR_ID ) ( DOT IDENTIFIER )*
-private nameCallExpr  ::= qualifiedName ( LPAREN argList? RPAREN )? ( LBRACKET expression RBRACKET )*
+private nameCallExpr  ::= qualifiedName ( LPAREN argList? RPAREN )? ( LBRACKET expression (COMMA expression)* RBRACKET )*

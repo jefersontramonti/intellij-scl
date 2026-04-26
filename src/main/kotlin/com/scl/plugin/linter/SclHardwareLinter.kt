@@ -9,16 +9,16 @@ import com.scl.plugin.psi.*
 /**
  * Linter SCL com consciência de hardware — Fase 4.
  *
- * Implementado como [LocalInspectionTool] (não como Annotator) porque é a
- * API recomendada para linters em linguagens customizadas no IntelliJ Platform 2024+.
- * Aparece em Settings → Editor → Inspections → SCL.
+ * Implemented as [LocalInspectionTool] (not as Annotator) because it is the
+ * recommended API for linters in custom languages on IntelliJ Platform 2024+.
+ * Visible in Settings → Editor → Inspections → SCL.
  *
- * Cinco regras:
- *   1. TIME_TO_DINT  → ERROR   no S7-1200
- *   2. LREAL         → WARNING no S7-1200  (quick fix: → REAL)
- *   3. Conflito %Mx  → ERROR   (ambos HW)
- *   4. Blink bug     → WARNING (ambos HW)
- *   5. CASE deadlock → WARNING (ambos HW)
+ * Five rules:
+ *   1. TIME_TO_DINT  → ERROR   on S7-1200
+ *   2. LREAL         → WARNING on S7-1200  (quick fix: → REAL)
+ *   3. %Mx conflict  → ERROR   (both HW)
+ *   4. Blink bug     → WARNING (both HW)
+ *   5. CASE deadlock → WARNING (both HW)
  */
 class SclHardwareLinter : LocalInspectionTool() {
 
@@ -37,27 +37,27 @@ class SclHardwareLinter : LocalInspectionTool() {
         return object : PsiElementVisitor() {
             override fun visitElement(element: PsiElement) {
 
-                // ── Regra 1: TIME_TO_DINT → ERROR no S7-1200 ─────────────────
+                // ── Rule 1: TIME_TO_DINT → ERROR on S7-1200 ──────────────────
                 if (element.node?.elementType == SclTypes.IDENTIFIER) {
                     checkTimeToDint(element, holder, hw)
                 }
 
-                // ── Regra 2: LREAL → WARNING no S7-1200 ──────────────────────
+                // ── Rule 2: LREAL → WARNING on S7-1200 ───────────────────────
                 if (element.node?.elementType == SclTypes.VAR_DECL) {
                     checkLreal(element as SclVarDecl, holder, hw)
                 }
 
-                // ── Regra 4: Blink bug ────────────────────────────────────────
+                // ── Rule 4: Blink bug ─────────────────────────────────────────
                 if (element.node?.elementType == SclTypes.CALL_STMT) {
                     checkBlinkBug(element as SclCallStmt, holder)
                 }
 
-                // ── Regra 3: Conflito de memória — análise de arquivo inteiro ─
+                // ── Rule 3: Memory conflict — whole-file analysis ─────────────
                 if (element is SclFile) {
                     checkMemoryConflicts(element, holder)
                 }
 
-                // ── Regra 5: CASE sem transição de estado ─────────────────────
+                // ── Rule 5: CASE with no state transition ────────────────────
                 if (element.node?.elementType == SclTypes.CASE_STATEMENT) {
                     checkCaseDeadlock(element as SclCaseStatement, holder)
                 }
@@ -66,7 +66,7 @@ class SclHardwareLinter : LocalInspectionTool() {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Regra 1 — TIME_TO_DINT não suportado no S7-1200
+    // Rule 1 — TIME_TO_DINT not supported on S7-1200
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun checkTimeToDint(identifier: PsiElement, holder: ProblemsHolder, hw: SclHardwareTarget) {
@@ -74,7 +74,7 @@ class SclHardwareLinter : LocalInspectionTool() {
         val name = identifier.text.uppercase()
         if (name !in TIME_CONVERSIONS) return
 
-        // É uma chamada de função? Próximo token não-whitespace deve ser '('
+        // Is it a function call? Next non-whitespace token must be '('
         var next = identifier.node.treeNext
         while (next != null && next.elementType == com.intellij.psi.TokenType.WHITE_SPACE) {
             next = next.treeNext
@@ -83,7 +83,7 @@ class SclHardwareLinter : LocalInspectionTool() {
 
         holder.registerProblem(
             identifier,
-            "'$name' não é suportado no S7-1200. Reescreva usando operações intermediárias.",
+            "'$name' is not supported on S7-1200. Rewrite using intermediate operations.",
             ProblemHighlightType.GENERIC_ERROR
         )
     }
@@ -102,14 +102,14 @@ class SclHardwareLinter : LocalInspectionTool() {
 
         holder.registerProblem(
             lrealNode.psi,
-            "LREAL (64-bit float) tem suporte limitado no S7-1200. Use REAL (32-bit).",
+            "LREAL (64-bit float) has limited support on S7-1200. Use REAL (32-bit) instead.",
             ProblemHighlightType.WARNING,
             ReplaceLrealWithRealFix()
         )
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Regra 3 — Conflito de acesso de memória
+    // Rule 3 — Memory access conflict
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun checkMemoryConflicts(file: SclFile, holder: ProblemsHolder) {
@@ -135,7 +135,7 @@ class SclHardwareLinter : LocalInspectionTool() {
             for (tok in group) {
                 holder.registerProblem(
                     tok.psi,
-                    "Conflito de memória: endereço ${tok.addr} acessado com tamanhos diferentes ($sizesStr).",
+                    "Memory conflict: address ${tok.addr} accessed with different sizes ($sizesStr).",
                     ProblemHighlightType.GENERIC_ERROR
                 )
             }
@@ -159,7 +159,7 @@ class SclHardwareLinter : LocalInspectionTool() {
             if (BLINK_PATTERN.containsMatchIn(exprText)) {
                 holder.registerProblem(
                     arg,
-                    "Blink bug: 'IN := NOT *.Q' causa dependência circular com atraso de 1 ciclo de scan. Use variável intermediária ou R_TRIG/F_TRIG.",
+                    "Blink bug: 'IN := NOT *.Q' creates a circular dependency with 1 scan-cycle delay. Use an intermediate variable or R_TRIG/F_TRIG.",
                     ProblemHighlightType.WARNING
                 )
             }
@@ -167,32 +167,33 @@ class SclHardwareLinter : LocalInspectionTool() {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Regra 5 — CASE sem transição de estado
+    // Rule 5 — CASE with no state transition
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun checkCaseDeadlock(caseStmt: SclCaseStatement, holder: ProblemsHolder) {
         val stateVar = caseStmt.expression?.text?.trim()
             ?.takeIf { it.matches(Regex("[A-Za-z_#][A-Za-z0-9_]*")) } ?: return
 
-        // Só verificar deadlock quando a variável pertence a VAR ou VAR_STATIC.
-        // VAR_INPUT nunca deve ser atribuído dentro do FB — não é deadlock.
+        // Only check deadlock for VAR / VAR_STATIC — VAR_INPUT is never assigned inside a FB.
         if (!isStateMachineVar(stateVar, caseStmt)) return
 
-        for (alt in caseStmt.caseAltList) {
-            val hasTransition = PsiTreeUtil
+        // Warn only when NO branch assigns stateVar.
+        // If at least one branch transitions, the FSM is not stuck.
+        val anyBranchTransitions = caseStmt.caseAltList.any { alt ->
+            PsiTreeUtil
                 .findChildrenOfType(alt.statementList, SclAssignStmt::class.java)
                 .any { assign ->
                     assign.node.findChildByType(SclTypes.IDENTIFIER)?.text
                         ?.equals(stateVar, ignoreCase = true) == true
                 }
-            if (!hasTransition) {
-                val label = alt.caseLabelList.firstOrNull() ?: continue
-                holder.registerProblem(
-                    label,
-                    "Deadlock potencial: estado '${label.text}' não atribui '$stateVar'. FSM pode ficar presa aqui.",
-                    ProblemHighlightType.WARNING
-                )
-            }
+        }
+        if (!anyBranchTransitions) {
+            val target = caseStmt.expression ?: return
+            holder.registerProblem(
+                target,
+                "Potential deadlock: no branch assigns '$stateVar'. FSM may get stuck.",
+                ProblemHighlightType.WARNING
+            )
         }
     }
 
@@ -216,11 +217,11 @@ class SclHardwareLinter : LocalInspectionTool() {
                         }
                     }
                 }
-                return false  // declarado no bloco mas não em VAR/VAR_STATIC
+                return false  // declared in block but not in VAR/VAR_STATIC
             }
             el = el.parent
         }
-        return false  // não encontrado — conservador: não reportar
+        return false  // not found — conservative: do not report
     }
 
     // ─────────────────────────────────────────────────────────────────────────

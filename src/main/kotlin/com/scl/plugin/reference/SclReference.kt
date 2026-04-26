@@ -1,10 +1,10 @@
 package com.scl.plugin.reference
 
-import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiManager
 import com.intellij.psi.PsiReferenceBase
+import com.intellij.psi.impl.source.resolve.ResolveCache
 import com.intellij.psi.search.FileTypeIndex
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.util.PsiTreeUtil
@@ -17,8 +17,6 @@ import com.scl.plugin.psi.SclOrgBlockDecl
 import com.scl.plugin.psi.SclStructField
 import com.scl.plugin.psi.SclTypes
 import com.scl.plugin.psi.SclVarDecl
-
-private val RLOG = Logger.getInstance("SclReference.resolve")
 
 /**
  * Referência PSI que resolve um identificador de USO para a DECLARAÇÃO.
@@ -47,25 +45,16 @@ class SclReference(
 
     // ── RESOLVE ───────────────────────────────────────────────────────────────
 
-    override fun resolve(): PsiElement? {
-        val name = referencedName
-        RLOG.warn("[SCL-RESOLVE] name='$name' element='${element.text}' parent=${element.parent?.javaClass?.simpleName}")
-        if (name.isEmpty()) return null
+    override fun resolve(): PsiElement? =
+        ResolveCache.getInstance(element.project)
+            .resolveWithCaching(this, RESOLVER, false, false)
 
-        resolveInLocalScope(name)?.let {
-            RLOG.warn("[SCL-RESOLVE]   -> LOCAL: ${it.javaClass.simpleName} '${(it as? SclNamedElement)?.name}'")
-            return it
-        }
-        resolveAsInstanceDb(name)?.let {
-            RLOG.warn("[SCL-RESOLVE]   -> INSTANCE_DB: ${(it as? SclNamedElement)?.name}")
-            return it
-        }
-        resolveAsGlobalBlock(name)?.let {
-            RLOG.warn("[SCL-RESOLVE]   -> GLOBAL: ${(it as? SclNamedElement)?.name}")
-            return it
-        }
-        RLOG.warn("[SCL-RESOLVE]   -> NULL (not found)")
-        return null
+    private fun resolveInner(): PsiElement? {
+        val name = referencedName
+        if (name.isEmpty()) return null
+        return resolveInLocalScope(name)
+            ?: resolveAsInstanceDb(name)
+            ?: resolveAsGlobalBlock(name)
     }
 
     /** Busca VAR/VAR_INPUT/VAR_OUTPUT/etc e structFields do bloco pai. */
@@ -75,19 +64,13 @@ class SclReference(
             SclFunctionBlockDecl::class.java,
             SclFunctionDecl::class.java,
             SclOrgBlockDecl::class.java,
-        )
-        RLOG.warn("[SCL-RESOLVE] '$name': block=${block?.javaClass?.simpleName} elementParent=${element.parent?.javaClass?.simpleName}")
-        if (block == null) return null
+        ) ?: return null
 
         val decls = PsiTreeUtil.findChildrenOfType(block, SclVarDecl::class.java)
-        RLOG.warn("[SCL-RESOLVE] '$name': ${decls.size} varDecls found: ${decls.map { "'${it.name}'" }}")
-
         decls.firstOrNull { it.name.equalsIgnoreCase(name) }?.let { return it }
 
         // Campos de STRUCT dentro do próprio bloco (raro, mas possível em DB).
         val fields = PsiTreeUtil.findChildrenOfType(block, SclStructField::class.java)
-        RLOG.warn("[SCL-RESOLVE] '$name': ${fields.size} structFields found: ${fields.map { "'${it.name}'" }}")
-
         fields.firstOrNull { it.name.equalsIgnoreCase(name) }?.let { return it }
 
         return null
@@ -159,4 +142,9 @@ class SclReference(
 
     private fun String?.equalsIgnoreCase(other: String): Boolean =
         this != null && this.equals(other, ignoreCase = true)
+
+    companion object {
+        private val RESOLVER =
+            ResolveCache.AbstractResolver<SclReference, PsiElement> { ref, _ -> ref.resolveInner() }
+    }
 }

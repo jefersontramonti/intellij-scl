@@ -113,15 +113,14 @@ class SclStructureViewElement(
     }
 
     /**
-     * FUNCTION_BLOCK: seções VAR não-vazias + CONST + BEGIN (corpo executável).
+     * FUNCTION_BLOCK: seções VAR e CONST (em ordem de arquivo) + BEGIN.
      */
     private fun buildChildrenForFB(fb: SclFunctionBlockDecl): Array<TreeElement> {
         val children = mutableListOf<TreeElement>()
-        fb.constSection?.takeIf { it.constDeclList.isNotEmpty() }
-            ?.let { children.add(SclVarSectionElement(it)) }
-        for (section in fb.varSectionList) {
-            if (section.varDeclList.isNotEmpty()) {
-                children.add(SclVarSectionElement(section))
+        for (child in fb.children) {
+            when (child) {
+                is SclConstSection -> if (child.constDeclList.isNotEmpty()) children.add(SclVarSectionElement(child))
+                is SclVarSection   -> if (child.varDeclList.isNotEmpty())   children.add(SclVarSectionElement(child))
             }
         }
         fb.statementList?.takeIf { it.hasInterestingStatements() }

@@ -1,19 +1,18 @@
 package com.scl.plugin.lexer
 
 import com.intellij.lexer.FlexAdapter
+import com.intellij.lexer.MergingLexerAdapter
+import com.intellij.psi.tree.TokenSet
+import com.scl.plugin.psi.SclTypes
 
 /**
- * Adapta o SclLexer gerado pelo JFlex para a interface Lexer do IntelliJ.
+ * Adapta o SclLexer (JFlex) para a interface Lexer do IntelliJ.
  *
- * FlexAdapter e o adaptador padrao recomendado pela plataforma para
- * lexers JFlex. Ele implementa a interface Lexer do IntelliJ delegando
- * para o lexer gerado.
- *
- * IMPORTANTE: SclLexer.java e gerado automaticamente pelo JFlex a partir
- * de Scl.flex. Antes de compilar o projeto, execute:
- *   ./gradlew generateSclLexer
- * ou no IntelliJ: clique com botao direito em Scl.flex → Run JFlex Generator
- *
- * Fonte: https://plugins.jetbrains.com/docs/intellij/implementing-lexer.html
+ * Usa MergingLexerAdapter para fundir os tokens BLOCK_COMMENT adjacentes
+ * (gerados caractere a caractere pelo estado exclusivo %xstate) em um
+ * único token — necessário para folding, documentação e realce corretos.
  */
-class SclLexerAdapter : FlexAdapter(SclLexer(null))
+class SclLexerAdapter : MergingLexerAdapter(
+    FlexAdapter(SclLexer(null)),
+    TokenSet.create(SclTypes.BLOCK_COMMENT)
+)

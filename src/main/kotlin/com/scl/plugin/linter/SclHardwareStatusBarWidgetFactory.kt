@@ -93,6 +93,19 @@ class SclHardwareStatusBarWidget(
             object : AnAction(target.displayName) {
                 override fun actionPerformed(e: AnActionEvent) {
                     svc.target = target
+                    // Sincroniza SclCpuSettings para que SclUnsupportedTypeInspection veja o mesmo target
+                    val cpuSettings = SclCpuSettings.getInstance(project)
+                    when (target) {
+                        SclHardwareTarget.S7_1500 -> {
+                            cpuSettings.setCpuFamily(CpuFamily.S7_1500)
+                            cpuSettings.setFirmwareVersion(FirmwareVersion.S7_1500_ANY)
+                        }
+                        SclHardwareTarget.S7_1200 -> {
+                            cpuSettings.setCpuFamily(CpuFamily.S7_1200)
+                            if (cpuSettings.firmwareVersion == FirmwareVersion.S7_1500_ANY)
+                                cpuSettings.setFirmwareVersion(FirmwareVersion.S7_1200_V4_0)
+                        }
+                    }
                     statusBar?.updateWidget(ID)
                     // Reinicia as anotações em todos os arquivos abertos do projeto
                     @Suppress("DEPRECATION")

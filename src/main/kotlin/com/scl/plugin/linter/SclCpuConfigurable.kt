@@ -50,8 +50,12 @@ class SclCpuConfigurable(private val project: Project) : Configurable {
 
     override fun apply() {
         val s = SclCpuSettings.getInstance(project)
-        s.setCpuFamily(CpuFamily.values()[cpuFamilyCombo.selectedIndex])
+        val newFamily = CpuFamily.values()[cpuFamilyCombo.selectedIndex]
+        s.setCpuFamily(newFamily)
         s.setFirmwareVersion(FirmwareVersion.values()[firmwareCombo.selectedIndex])
+        // Sincroniza SclHardwareTargetService para que o widget e SclHardwareLinter vejam o mesmo target
+        val hwSvc = SclHardwareTargetService.getInstance(project)
+        hwSvc.target = if (newFamily == CpuFamily.S7_1500) SclHardwareTarget.S7_1500 else SclHardwareTarget.S7_1200
         DaemonCodeAnalyzer.getInstance(project).restart()
     }
 

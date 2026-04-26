@@ -3,6 +3,7 @@ package com.scl.plugin.psi
 import com.intellij.extapi.psi.ASTWrapperPsiElement
 import com.intellij.lang.ASTNode
 import com.intellij.psi.PsiElement
+import com.intellij.psi.tree.IElementType
 
 /**
  * Implementação base (mixin) para elementos PSI SCL que têm nome —
@@ -23,6 +24,16 @@ import com.intellij.psi.PsiElement
  */
 abstract class SclNamedElementImpl(node: ASTNode) :
     ASTWrapperPsiElement(node), SclNamedElement {
+
+    companion object {
+        // Keywords de tipo de parâmetro que o TIA Portal permite como nomes de variável/campo.
+        // Espelha a regra `private varName` do BNF.
+        private val KEYWORD_NAME_TYPES: Set<IElementType> = setOf(
+            SclTypes.COUNTER, SclTypes.TIMER, SclTypes.POINTER, SclTypes.ANY, SclTypes.VOID,
+            SclTypes.BLOCK_FB, SclTypes.BLOCK_FC, SclTypes.BLOCK_DB,
+            SclTypes.BLOCK_SDB, SclTypes.BLOCK_SFB, SclTypes.BLOCK_SFC,
+        )
+    }
 
     /**
      * Nome do elemento — primeiro IDENTIFIER ou QUOTED_IDENTIFIER entre os filhos.
@@ -67,7 +78,7 @@ abstract class SclNamedElementImpl(node: ASTNode) :
         var child: ASTNode? = node.firstChildNode
         while (child != null) {
             val t = child.elementType
-            if (t == SclTypes.IDENTIFIER || t == SclTypes.QUOTED_IDENTIFIER) {
+            if (t == SclTypes.IDENTIFIER || t == SclTypes.QUOTED_IDENTIFIER || t in KEYWORD_NAME_TYPES) {
                 return child
             }
             child = child.treeNext
