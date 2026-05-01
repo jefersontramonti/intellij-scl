@@ -12,9 +12,9 @@ SCL is the IEC 61131-3 Structured Text dialect used in Siemens **TIA Portal V19*
 
 ## What is this plugin?
 
-`intellij-scl` brings industrial PLC programming into a modern IDE. Instead of writing SCL exclusively inside TIA Portal's limited editor, you can use IntelliJ IDEA with syntax highlighting, smart completion, go-to-definition, find usages, an HW-aware linter, a code formatter, and a full MCP server — the same infrastructure that powers Java, Kotlin, and Python support in JetBrains IDEs.
+`intellij-scl` brings industrial PLC programming into a modern IDE. Instead of writing SCL exclusively inside TIA Portal's limited editor, you can use IntelliJ IDEA with syntax highlighting, smart completion, go-to-definition, find usages, a hardware-aware linter, a Safety linter, a code formatter, a new-project wizard, and a full MCP server — the same infrastructure that powers Java, Kotlin, and Python support in JetBrains IDEs.
 
-The plugin is built on the **IntelliJ Platform SDK** and uses **Grammar-Kit + JFlex** to generate a complete lexer and parser from formal grammar files (`Scl.bnf`, `Scl.flex`). The grammar is derived directly from the official Siemens SCLV4 specification (Appendices B and C — Lexical and Syntax Rules) and the TIA Portal V19 programming manual.
+The plugin is built on the **IntelliJ Platform SDK** and uses **Grammar-Kit + JFlex** to generate a complete lexer and parser from formal grammar files (`Scl.bnf`, `Scl.flex`). The grammar is derived directly from the official Siemens SCLV4 specification (Appendices B and C) and the TIA Portal V19 programming manual.
 
 ---
 
@@ -22,62 +22,55 @@ The plugin is built on the **IntelliJ Platform SDK** and uses **Grammar-Kit + JF
 
 ### Phase 1 — Foundation ✅
 - **File type recognition** — `.scl` and `.SCL` extensions registered with a custom icon
-- **Syntax highlighting** for:
-  - Block keywords (`FUNCTION_BLOCK`, `FUNCTION`, `DATA_BLOCK`, `ORGANIZATION_BLOCK`, `TYPE`)
-  - Variable section keywords (`VAR`, `VAR_INPUT`, `VAR_OUTPUT`, `VAR_IN_OUT`, `VAR_TEMP`, `VAR_STATIC`)
-  - Control flow (`IF/THEN/ELSIF/ELSE/END_IF`, `CASE/OF`, `FOR/TO/BY/DO`, `WHILE`, `REPEAT/UNTIL`, `GOTO`, `RETURN`, `EXIT`, `CONTINUE`)
-  - All elementary data types (`BOOL`, `INT`, `DINT`, `REAL`, `LREAL`, `WORD`, `DWORD`, `TIME`, `DATE`, `TOD`, `S5TIME`, `DATE_AND_TIME`, …)
-  - Logical and arithmetic operators (`AND`, `OR`, `XOR`, `NOT`, `MOD`, `DIV`)
-  - Literals — boolean, integer (decimal/hex/octal/binary), real, string, time
-  - Typed time literals (`T#5S`, `DT#2024-01-01-12:00:00`, `TOD#08:30:00`, `S5T#1H`)
-  - **TIA Portal global tags** — `"QuotedIdentifier"` highlighted as global variable
-  - **TIA Portal local variables** — `#localVar` highlighted as local variable
-  - **Siemens memory access** — `%MW10`, `%I0.0`, `%Q2.3`
-  - Comments — `//` line comments and `(* block comments *)`
-  - Combined assignment operators — `+=`, `-=`, `*=`, `/=`
+- **Syntax highlighting** for keywords, types, operators, literals, comments, global tags (`"QuotedId"`), local variables (`#var`), and Siemens memory addresses (`%MW10`, `%I0.0`, `%Q2.3`)
+- **Combined assignment operators** — `+=`, `-=`, `*=`, `/=`
 
 ### Phase 2 — Parser & Editor ✅
-- **Full BNF grammar** (`Scl.bnf`) generated via Grammar-Kit, producing a complete PSI tree
-  - All block declarations with optional `CONST`/`LABEL` sections
-  - `ARRAY[x..y] OF type` (up to 6 dimensions), `STRING[n]`
-  - `REGION … END_REGION` (TIA Portal), `GOTO`, labeled statements
-  - DB assignment sections (`BEGIN … END_DATA_BLOCK`)
-  - Named block arguments: input (`:=`) and output (`=>`)
-  - Correct operator precedence (11 levels per SCLV4 §13.1)
-  - Quoted block names: `FUNCTION_BLOCK "FB_Diagnostic"` accepted
+- **Full BNF grammar** (`Scl.bnf`) generating a complete PSI tree via Grammar-Kit
+  - All block types: `FUNCTION_BLOCK`, `FUNCTION`, `ORGANIZATION_BLOCK`, `DATA_BLOCK`, `TYPE`
+  - `ARRAY[x..y] OF type` up to 6 dimensions, `STRING[n]`, `STRUCT`
+  - `CONST` and `LABEL` sections (SCLV4 Appendix C.2)
+  - `REGION … END_REGION` with **multi-word names** — `REGION Edge Detection` accepted (TIA Portal parity)
+  - `GOTO`, labeled statements, correct operator precedence (11 levels per SCLV4 §13.1)
+  - Quoted block names: `FUNCTION_BLOCK "FB_Motor"` accepted
 - **Code folding** — blocks, var sections, IF/FOR/WHILE/REPEAT/CASE, CONST, REGION, block comments
-- **Line and block commenting** — `Ctrl+/` inserts `//`, `Ctrl+Shift+/` wraps in `(* … *)`
-- **Brace matching** — highlights matching `BEGIN/END`, `IF/END_IF`, `FOR/END_FOR`, etc.
+- **Line and block commenting** — `Ctrl+/` for `//`, `Ctrl+Shift+/` for `(* … *)`
+- **Brace matching** — `BEGIN/END`, `IF/END_IF`, `FOR/END_FOR`, `FUNCTION_BLOCK/END_FUNCTION_BLOCK`, etc.
 
 ### Phase 3 — Completion & Documentation ✅
-- **Code completion** — variables from `VAR_INPUT`, `VAR_OUTPUT`, `VAR_STATIC`, `VAR_TEMP`
-- **Dot-completion** — `fbInstance.` triggers output variable suggestions
-- **Builtin function catalog** — `SQRT`, `ABS`, `LEN`, `LEFT`, `RIGHT`, `MID`, `CONCAT`, `TON`, `TOF`, `TP`, `CTU`, `CTD`, `CTUD`, and 40+ more
-- **Live templates** — `if`, `for`, `while`, `repeat`, `case`, `fb`, `fn`, `ob` expand to full SCL blocks
-- **Hover documentation** (`Ctrl+Q`) — shows variable type, section, and description
-- **Parameter info popup** (`Ctrl+P`) — shows FB/FC parameter signatures inline
+- **Code completion** (`Ctrl+Space`) — variables, block names, all SCL keywords and types
+- **Dot-completion** — `fbInstance.` suggests output parameters
+- **Builtin function catalog** — `SQRT`, `ABS`, `LEN`, `LEFT`, `RIGHT`, `MID`, `CONCAT`, `TON`, `TOF`, `TP`, `CTU`, `CTD`, `CTUD`, and 40+ more with full signatures
+- **Live templates** — `if`, `ife`, `case`, `for`, `while`, `repeat`, `fb`, `var`, `region`, `ton` expand to full SCL blocks
+- **Hover documentation** (`Ctrl+Q`) — variable type, section, and inline comment
+- **Parameter info popup** (`Ctrl+P`) — FB/FC parameter signatures inline
 
 ### Phase 4 — Formatter & Structure View ✅
 - **Code formatter** (`Ctrl+Alt+L`) — indentation, spacing around operators, alignment of `:=` in var declarations, blank lines between sections
-- **Structure View** (`Alt+7`) — tree of blocks → VAR sections → variables, with icons per type
+- **Structure View** (`Alt+7`) — tree of blocks → VAR sections → variables → body statements (REGION, CASE, IF, FOR, WHILE)
 - **Color settings page** — customize all SCL token colors via *Settings → Editor → Color Scheme → SCL*
 
 ### Phase 4B — HW-Aware Linter ✅
-- **CPU target selector** — per-project setting in *Settings → Languages → SCL → CPU Target*: `S7-1200`, `S7-1500`, `S7-300/400`
-- **Status bar widget** — shows the active CPU target in the bottom bar
-- **6 inspections** (all configurable per-CPU in *Settings → Editor → Inspections → SCL*):
-  - **Absolute address** (`%MW`, `%I`, `%Q`) — flagged on S7-1500 (use symbolic only)
-  - **Boolean in IF** — warns when a non-`BOOL` expression is used as an IF condition
-  - **CASE without ELSE** — warns on missing `ELSE` branch in CASE statements
-  - **FOR index type** — catches `DINT`/`UDINT` loop counters not supported on S7-300
-  - **TEMP var uninitialized** — detects `VAR_TEMP` variables read before assignment
-  - **Unsupported type** — flags `LREAL`, `LINT`, `ULINT` on S7-1200/S7-300
+- **CPU target selector** — per-project setting in *Settings → Tools → SCL CPU Target*: family (`S7-1200`, `S7-1500`, `S7-300/400`) + firmware version
+- **Status bar widget** — shows the active target in the bottom bar (click to switch)
+- **7 inspections** (group **SCL**, configurable in *Settings → Editor → Inspections*):
+
+| Inspection | Level | Description |
+|---|---|---|
+| Absolute memory address | WARNING | `%MW`, `%I`, `%Q` — use symbolic tags instead |
+| Unnecessary boolean IF | WARNING | `IF boolVar = TRUE THEN` → simplify to `IF boolVar THEN` |
+| CASE without ELSE | WARNING | Missing ELSE to handle unexpected states |
+| FOR index type | ERROR | `DINT`/`UDINT` index not supported on S7-300/400 |
+| VAR_TEMP uninitialized | WARNING | `VAR_TEMP` read before first assignment |
+| Unsupported type | ERROR | `LREAL`, `LINT`, `ULINT` not supported on selected CPU |
+| HW Compatibility (5 rules) | WARNING/ERROR | `TIME_TO_DINT`, `LREAL`, `%Mx` conflict, blink bug, CASE deadlock |
 
 ### Phase 6 — Navigation & Refactoring ✅
 - **Go to Declaration** (`Ctrl+Click` / `Ctrl+B`) — jumps to variable or block declaration
 - **Find Usages** (`Alt+F7`) — finds all references to a symbol across the project
-- **Rename** (`Shift+F6`) — renames variables and blocks in-place across all usages
-- **SCL Project View** — dedicated pane showing SCL blocks grouped by type (FB, FC, OB, UDT, DB)
+- **Rename** (`Shift+F6`) — renames variables and blocks across all usages
+- **SCL Project View** — dedicated pane grouping `.scl` files by block type (FB, FC, OB, UDT, DB)
+- **Project View decorator** — standard Project View shows block-type icons (FB = class, FC = function, OB = plugin, UDT = record)
 
 ### Phase 7 — MCP Server ✅
 Exposes SCL project data to AI agents (Claude Code and any MCP client) via the **IntelliJ MCP Server** protocol.
@@ -91,17 +84,50 @@ Exposes SCL project data to AI agents (Claude Code and any MCP client) via the *
 | `scl_read_io_list` | Reads a CSV/text I/O list and maps tags to SCL variable declarations |
 | `scl_project_summary` | Returns a summary of the entire SCL project (block count, types, stats) |
 
+### Phase 8 — New Project Wizard ✅
+- **New SCL Project** dialog in *File → New → Project → SCL*
+- **CPU Target selection** — S7-1200 / S7-1500 / S7-300/400 at project creation
+- **Template selection**:
+  - *Empty* — bare project structure
+  - *Basic FB + OB* — starter `FUNCTION_BLOCK` and `ORGANIZATION_BLOCK`
+  - *State Machine (FSM)* — FB with a CASE-based state machine and REGION sections
+- **Auto-generates** the standard folder structure: `FBs/`, `FCs/`, `OBs/`, `UDTs/`, `DBs/`
+
+### Phase 9 — Safety Mode SCL Linter ✅
+Enforces Siemens **Programming Guideline Safety V1.3** and **STEP 7 Safety V21** rules for fail-safe F-programs targeting S7-1200F / S7-1500F CPUs.
+
+**Detection:** any block whose name starts with `F_` is treated as a Safety block (e.g. `F_EStop`, `"F_GuardDoor"`).
+
+**Project View:** `F_*.scl` files are decorated with a red Safety icon, distinct from standard blue/green/orange block icons.
+
+**8 inspections** (group **SCL Safety**, configurable in *Settings → Editor → Inspections*):
+
+| ID | Level | Rule |
+|---|---|---|
+| `SclSafetyGoto` | ERROR | `GOTO` is prohibited in Safety programs (Guideline §4.1.1) |
+| `SclSafetyType` | ERROR | `LINT`, `ULINT`, `LWORD`, `LTIME`, `LTOD`, `LDT`, `WSTRING` not supported (SIL3 — IEC 61508) |
+| `SclSafetyType` | WARNING | `LREAL` has limited support — verify F-CPU firmware |
+| `SclSafetyGlobalData` | ERROR | Global DB access (`"DB_x".field`) not allowed inside F-FB — pass as parameter (Guideline §3.7) |
+| `SclSafetyJump` | WARNING | `EXIT` / `CONTINUE` jumps should be minimized in Safety programs |
+| `SclSafetyHeader` | WARNING | Safety block missing required header (SIL level, F-Signature, author — Guideline §3.1.6) |
+| `SclSafetyCaseElse` | WARNING | `CASE` without `ELSE` — Safety programs must return to a safe state |
+| `SclSafetyValueStatus` | WARNING | F-I/O channel (`DI_*` / `DO_*`) accessed without `_VS` value-status check (Guideline §3.4) |
+
+**5 Safety live templates** (`fsafety`, `festop`, `fguard`, `fmain`, `fudtq`) for quick scaffolding of Safety blocks with the mandatory header pre-filled.
+
+**References:** [Programming Guideline Safety V1.3](https://support.industry.siemens.com/cs/ww/en/view/109750255) · [SIMATIC Safety V21](https://support.industry.siemens.com/cs/attachments/54110126/ProgFAILenUS_en-US.pdf)
+
 ---
 
 ## Building Locally
 
 ### Requirements
 
-| Tool | Version | Notes |
-|------|---------|-------|
-| JDK | 21+ | Target bytecode. JDK 25 also works as runtime |
-| Gradle | 9.4.1 | Managed by the wrapper (`./gradlew`) |
-| IntelliJ IDEA | any | Community or Ultimate for development |
+| Tool | Version |
+|------|---------|
+| JDK | 21+ |
+| Gradle | 9.4.1 (wrapper) |
+| IntelliJ IDEA | Community or Ultimate |
 
 ### Steps
 
@@ -110,22 +136,17 @@ Exposes SCL project data to AI agents (Claude Code and any MCP client) via the *
 git clone https://github.com/jefersontramonti/intellij-scl.git
 cd intellij-scl
 
-# 2. Generate the parser and lexer from grammar files
+# 2. Generate lexer and parser from grammar files
 ./gradlew generateSclParser generateSclLexer
 
-# 3. Compile
-./gradlew compileKotlin
-
-# 4. Launch a sandbox IntelliJ instance with the plugin loaded
-#    Close IntelliJ IDEA first to avoid file-lock on pdfbox jar
+# 3. Launch a sandbox IntelliJ with the plugin loaded
+#    Close any running IntelliJ IDEA instance first (Windows file-lock)
 ./gradlew runIde
 
-# 5. Build the distributable plugin zip
+# 4. Build the distributable plugin zip
 ./gradlew buildPlugin
 # Output: build/distributions/scl-language-support-1.0.0.zip
 ```
-
-> **Note:** `./gradlew runIde` requires IntelliJ IDEA to be closed beforehand.
 
 ### Project Structure
 
@@ -133,35 +154,35 @@ cd intellij-scl
 scl-plugin/
 ├── build.gradle.kts
 ├── gradle.properties
-├── settings.gradle.kts
 │
 ├── src/main/
 │   ├── kotlin/com/scl/plugin/
 │   │   ├── language/          # SclLanguage, SclFileType
-│   │   ├── psi/               # SclFile, SclTokenTypes, SclElementType, SclNamedElement
+│   │   ├── psi/               # SclFile, SclTokenTypes, SclNamedElement
 │   │   ├── lexer/             # SclLexerAdapter
 │   │   ├── parser/            # SclParserDefinition
 │   │   ├── highlighting/      # SclSyntaxHighlighter, SclColorSettingsPage
 │   │   ├── folding/           # SclFoldingBuilder
-│   │   ├── completion/        # SclCompletionContributor, SclBuiltinFunctions, SclParameterInfoHandler
-│   │   ├── documentation/     # SclDocumentationTargetProvider, SclVariableDocumentationTarget
+│   │   ├── completion/        # SclCompletionContributor, SclBuiltinFunctions
+│   │   ├── documentation/     # SclDocumentationTargetProvider
 │   │   ├── formatting/        # SclFormattingModelBuilder, SclBlock, SclSpacingBuilder
-│   │   ├── structure/         # SclStructureViewFactory, SclStructureViewElement, SclBodyElement
-│   │   ├── linter/            # SclHardwareLinter, SclCpuSettings, SclHardwareStatusBarWidgetFactory
-│   │   │   └── inspections/   # 6 LocalInspectionTool implementations
-│   │   ├── reference/         # SclReference, SclReferenceContributor, SclGotoDeclarationHandler, SclRenameHandler
-│   │   ├── findUsages/        # SclFindUsagesProvider, SclUsagesSearcher
+│   │   ├── structure/         # SclStructureViewFactory, SclBodyElement
+│   │   ├── linter/            # HW-aware linter, CPU settings, status bar widget
+│   │   │   ├── inspections/   # 6 standard LocalInspectionTool implementations
+│   │   │   └── safety/        # 8 Safety inspections + SclSafetyUtils
+│   │   ├── reference/         # GotoDeclarationHandler, RenameHandler, FindUsages
 │   │   ├── view/              # SclProjectViewPane, SclProjectViewNodeDecorator
-│   │   ├── mcp/               # SclMcpBase, SclToolset (6 MCP tools)
-│   │   └── SclBraceMatcher.kt
+│   │   ├── wizard/            # SclModuleBuilder, SclProjectGenerator, SclTemplates
+│   │   ├── mcp/               # SclToolset (6 MCP tools)
+│   │   └── SclIcons.kt
 │   │
 │   ├── resources/
 │   │   ├── META-INF/plugin.xml
 │   │   ├── grammar/
-│   │   │   ├── Scl.bnf
-│   │   │   └── Scl.flex
+│   │   │   ├── Scl.bnf        # Grammar-Kit BNF grammar
+│   │   │   └── Scl.flex       # JFlex lexer
 │   │   ├── icons/scl.svg
-│   │   └── liveTemplates/SCL.xml
+│   │   └── liveTemplates/SCL.xml   # 15 live templates (10 standard + 5 Safety)
 │   │
 │   └── gen/                   # ⚠ Generated — do not edit
 │       └── com/scl/plugin/
@@ -170,9 +191,12 @@ scl-plugin/
 │           └── psi/
 │
 └── examples/
-    ├── FBs/                   # FB_TankControl, FB_Diagnostic, FB_StackLight, FB_TimerControl, FB_Esteira
-    ├── OBs/                   # OB_Main
-    └── UDTs/                  # UDT_TankStatus, UDT_TankSensors, UDT_TankActuators, UDT_TankCmd, UDT_PID_Params
+    ├── FBs/                   # FB_PluginTest_Safe
+    ├── FCs/                   # FC_ScaleValue
+    ├── OBs/                   # OB1
+    ├── DBs/                   # DB_GlobalData
+    ├── UDTs/                  # UDT_ConveyorStatus, UDT_MotorData
+    └── F_SafetyTest.scl       # Safety linter test file (all 8 rules)
 ```
 
 ---
@@ -198,7 +222,19 @@ The grammar (`Scl.bnf` + `Scl.flex`) was built against two official Siemens sour
 - **SCLV4** — *SCL for S7-300/400 Programming*, Siemens 1998  
   Appendix B (Lexical Rules) and Appendix C (Syntax Rules) are the primary formal reference.
 - **TIA Portal V19** — *Creating SCL Programs*, Siemens 11/2025  
-  Source of TIA Portal extensions: `REGION/END_REGION`, combined assignments (`+=`), output operator (`=>`), quoted identifiers (`"TagName"`), local variable prefix (`#var`).
+  TIA Portal extensions: `REGION/END_REGION` (multi-word names), combined assignments (`+=`), output operator (`=>`), quoted identifiers (`"TagName"`), local variable prefix (`#var`).
+- **Programming Guideline Safety V1.3** — Siemens 03/2023  
+  Basis for all Phase 9 Safety linter rules.
+
+---
+
+## Known Limitations
+
+- Tested on **IntelliJ IDEA 2026.1** only — older platform versions untested
+- **MCP Server** requires the *IntelliJ MCP Server* plugin to be enabled in the host IDE
+- **Safety F-Signature** validation requires TIA Portal — not generated by this plugin (by design; F-Signature is computed internally by the TIA Portal Safety compiler after formal acceptance)
+- **No unit tests yet** — parser edge cases may produce unexpected PSI trees
+- **Project paths with spaces** may cause `scl_validate_file` (MCP tool) to fail
 
 ---
 
