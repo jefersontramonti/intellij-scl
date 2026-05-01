@@ -391,7 +391,7 @@ varDecl ::= varName COLON typeRef ( ASSIGN expression )? SEMICOLON {
 // Apendice C.3: Data Types in SCL
 // ─────────────────────────────────────────────────────────────────────────────
 
-typeRef ::= arrayTypeRef | stringTypeRef | structDecl | paramTypeRef | builtinType | IDENTIFIER
+typeRef ::= arrayTypeRef | stringTypeRef | structDecl | paramTypeRef | builtinType | IDENTIFIER | QUOTED_IDENTIFIER
 
 // ARRAY[x..y] OF tipo — ate 6 dimensoes (SCLV4 Apendice C.3)
 arrayTypeRef ::= ARRAY LBRACKET arrayDimension (COMMA arrayDimension)* RBRACKET OF typeRef {
