@@ -108,4 +108,62 @@
     <context><option name="SCL" value="true"/></context>
   </template>
 
+
+  <!-- ── Safety: F-FB completo com cabeçalho obrigatório (§3.1.6) ──────────── -->
+  <template name="fsafety"
+            value="FUNCTION_BLOCK &quot;F_$NAME$&quot;&#10;(*&#10; * Company:        $COMPANY$&#10; * Title:          F_$NAME$&#10; * Function:       $DESCRIPTION$&#10; * Library/Family: Safety&#10; * Author:         $AUTHOR$&#10; * Tested with:    TIA Portal V19 / STEP 7 Safety V21&#10; * Safety Level:   SIL $SIL$ / PL $PL$ Cat $CAT$&#10; * F-Signature:    [generated automatically by TIA Portal after acceptance]&#10; *)&#10;&#10;VAR_INPUT&#10;    $END$&#10;END_VAR&#10;&#10;VAR_OUTPUT&#10;END_VAR&#10;&#10;VAR&#10;END_VAR&#10;&#10;BEGIN&#10;&#10;END_FUNCTION_BLOCK"
+            description="F-FB Safety — full header + VAR sections"
+            toReformat="true"
+            toShortenFQNames="true">
+    <variable name="NAME"        expression="" defaultValue="&quot;SafetyBlock&quot;" alwaysStopAt="true"/>
+    <variable name="COMPANY"     expression="" defaultValue="&quot;Company&quot;"     alwaysStopAt="true"/>
+    <variable name="DESCRIPTION" expression="" defaultValue="&quot;Safety function&quot;" alwaysStopAt="true"/>
+    <variable name="AUTHOR"      expression="" defaultValue="&quot;Author&quot;"       alwaysStopAt="true"/>
+    <variable name="SIL"         expression="" defaultValue="3"                     alwaysStopAt="true"/>
+    <variable name="PL"          expression="" defaultValue="&quot;e&quot;"           alwaysStopAt="true"/>
+    <variable name="CAT"         expression="" defaultValue="4"                     alwaysStopAt="true"/>
+    <context><option name="SCL" value="true"/></context>
+  </template>
+
+  <!-- ── Safety: F-FB E-Stop dois canais ──────────────────────────────────── -->
+  <template name="festop"
+            value="FUNCTION_BLOCK &quot;F_$NAME$&quot;&#10;(* Safety — $DESCRIPTION$ | SIL 3 / PLe Cat 4 *)&#10;&#10;VAR_INPUT&#10;    i_Ch1 : Bool;   // Channel 1 NC contact&#10;    i_Ch2 : Bool;   // Channel 2 redundancy&#10;    i_Ack : Bool;   // Acknowledgment button&#10;END_VAR&#10;&#10;VAR_OUTPUT&#10;    o_Release  : Bool;&#10;    o_DiagCode : Int;&#10;END_VAR&#10;&#10;VAR&#10;    s_AckEdge : R_TRIG;&#10;END_VAR&#10;&#10;BEGIN&#10;    s_AckEdge(CLK := i_Ack);&#10;&#10;    o_Release := i_Ch1 AND i_Ch2;&#10;&#10;    $END$&#10;END_FUNCTION_BLOCK"
+            description="F-FB E-Stop with two channels"
+            toReformat="true"
+            toShortenFQNames="true">
+    <variable name="NAME"        expression="" defaultValue="&quot;EStop&quot;"          alwaysStopAt="true"/>
+    <variable name="DESCRIPTION" expression="" defaultValue="&quot;Emergency stop&quot;" alwaysStopAt="true"/>
+    <context><option name="SCL" value="true"/></context>
+  </template>
+
+  <!-- ── Safety: F-FB porta de segurança ──────────────────────────────────── -->
+  <template name="fguard"
+            value="FUNCTION_BLOCK &quot;F_$NAME$&quot;&#10;(* Safety — $DESCRIPTION$ | SIL 2 / PLd Cat 3 *)&#10;&#10;VAR_INPUT&#10;    i_DoorClosed : Bool;   // Guard door closed sensor&#10;    i_Ack        : Bool;   // Acknowledgment&#10;END_VAR&#10;&#10;VAR_OUTPUT&#10;    o_SafetyRelease : Bool;&#10;    o_DiagCode      : Int;&#10;END_VAR&#10;&#10;VAR&#10;    s_State   : Int;&#10;    s_AckEdge : R_TRIG;&#10;END_VAR&#10;&#10;BEGIN&#10;    s_AckEdge(CLK := i_Ack);&#10;&#10;    CASE s_State OF&#10;        0: // Safe state&#10;            o_SafetyRelease := FALSE;&#10;            IF i_DoorClosed AND s_AckEdge.Q THEN s_State := 1; END_IF;&#10;        1: // Running&#10;            o_SafetyRelease := i_DoorClosed;&#10;            IF NOT i_DoorClosed THEN s_State := 0; END_IF;&#10;        ELSE&#10;            s_State := 0; // Always return to safe state&#10;    END_CASE;&#10;&#10;    $END$&#10;END_FUNCTION_BLOCK"
+            description="F-FB guard door with safe-state machine"
+            toReformat="true"
+            toShortenFQNames="true">
+    <variable name="NAME"        expression="" defaultValue="&quot;GuardDoor&quot;"     alwaysStopAt="true"/>
+    <variable name="DESCRIPTION" expression="" defaultValue="&quot;Guard door lock&quot;" alwaysStopAt="true"/>
+    <context><option name="SCL" value="true"/></context>
+  </template>
+
+  <!-- ── Safety: Main Safety OB com ordem de chamada obrigatória ───────────── -->
+  <template name="fmain"
+            value="ORGANIZATION_BLOCK &quot;Main_Safety_RTG1&quot;&#10;(* F-runtime group — Safety cycle | Siemens Guideline §3.1.4 *)&#10;&#10;VAR_TEMP&#10;END_VAR&#10;&#10;BEGIN&#10;    // 1. Receive blocks (F-CPU to F-CPU communication)&#10;&#10;    // 2. Error acknowledgment / reintegration of F-modules&#10;    // &quot;F_ACK_DB&quot;(ACK_REI := &quot;DB_Safety&quot;.AckReintegration);&#10;&#10;    // 3. Sensor evaluation&#10;    $END$&#10;&#10;    // 4. Operating mode evaluation&#10;&#10;    // 5. Logic operations&#10;&#10;    // 6. Actuator control&#10;&#10;    // 7. Send blocks (F-CPU to F-CPU communication)&#10;&#10;END_ORGANIZATION_BLOCK"
+            description="Main Safety OB with mandatory call order (Guideline §3.1.4)"
+            toReformat="true"
+            toShortenFQNames="true">
+    <context><option name="SCL" value="true"/></context>
+  </template>
+
+  <!-- ── Safety: F-UDT mínimo com tipos permitidos ─────────────────────────── -->
+  <template name="fudtq"
+            value="TYPE &quot;F_UDT_$NAME$&quot;&#10;// F-compliant PLC data type — only 32-bit or smaller types allowed&#10;    STRUCT&#10;        SafetyRelease : Bool;   // TRUE = safe to operate&#10;        DiagCode      : Int;    // Diagnostic code&#10;        $END$&#10;        // LInt : LInt;  // PROHIBITED in Safety&#10;        // LTime: LTime; // PROHIBITED in Safety&#10;    END_STRUCT&#10;END_TYPE"
+            description="F-UDT with Safety-compliant types only"
+            toReformat="true"
+            toShortenFQNames="true">
+    <variable name="NAME" expression="" defaultValue="&quot;Machine&quot;" alwaysStopAt="true"/>
+    <context><option name="SCL" value="true"/></context>
+  </template>
+
 </templateSet>

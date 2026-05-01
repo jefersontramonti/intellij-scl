@@ -62,8 +62,11 @@
     END_LABEL = 'END_LABEL'
 
     // ── Regioes TIA Portal ────────────────────────────────────────────────
-    REGION     = 'REGION'
-    END_REGION = 'END_REGION'
+    REGION      = 'REGION'
+    END_REGION  = 'END_REGION'
+    // Synthetic token: produced by REGION_NAME_STATE in the lexer.
+    // Captures everything on the same line after REGION (may contain spaces).
+    REGION_NAME = 'region_name'
 
     // ── Controle de fluxo ─────────────────────────────────────────────────
     IF         = 'IF'
@@ -478,8 +481,9 @@ gotoStmt ::= GOTO IDENTIFIER {
 }
 
 // REGION nome_opcional codigo END_REGION (TIA Portal)
-// O nome e opcional; END_REGION pode ser seguido de comentario (ignorado pelo lexer)
-regionStmt ::= REGION IDENTIFIER? statementList END_REGION {
+// Name is a single REGION_NAME token produced by the lexer state — may contain spaces.
+// Examples: REGION EdgeDetection  |  REGION Edge Detection  |  REGION (no name)
+regionStmt ::= REGION REGION_NAME? statementList END_REGION {
   pin=1
 }
 

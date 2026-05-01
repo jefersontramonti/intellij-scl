@@ -1,0 +1,16 @@
+DATA_BLOCK DB_GlobalData
+{ S7_Optimized_Access := 'TRUE' }
+
+STRUCT
+    Motor1 : UDT_MotorData;
+    Motor2 : UDT_MotorData;
+    Conveyor : UDT_ConveyorStatus;
+    CycleCount : DInt := 0;
+    SystemReady : Bool := FALSE;
+    SetpointSpeed : Real := 75.0;
+    ProcessArray : Array[0..9] of
+    Int;
+    StatusWord : Word := 0;
+END_STRUCT
+
+END_DATA_BLOCK

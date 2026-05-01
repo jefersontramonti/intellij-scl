@@ -31,6 +31,9 @@ import com.scl.plugin.psi.SclTypes;
 
 /* Estados do lexer */
 %xstate BLOCK_COMMENT_STATE
+/* After REGION keyword: consume rest-of-line as a single REGION_NAME token.
+   Exclusive state so no keywords are recognised inside the region name. */
+%xstate REGION_NAME_STATE
 
 %%
 
@@ -130,7 +133,18 @@ import com.scl.plugin.psi.SclTypes;
 
 /* ── Regioes TIA Portal ──────────────────────────────────────────────────── */
 "END_REGION"              { return SclTypes.END_REGION; }
-"REGION"                  { return SclTypes.REGION; }
+"REGION"                  { yybegin(REGION_NAME_STATE); return SclTypes.REGION; }
+
+/* REGION_NAME_STATE: consume rest-of-line after REGION keyword.
+   - Leading spaces  → WHITE_SPACE (stay in state, no yybegin)
+   - Name text       → REGION_NAME (first non-space char to end of line)
+   - Newline / EOF   → WHITE_SPACE, back to YYINITIAL (no name on this line) */
+<REGION_NAME_STATE> {
+    [ \t]+               { return TokenType.WHITE_SPACE; }
+    [^ \t\r\n][^\r\n]*   { yybegin(YYINITIAL); return SclTypes.REGION_NAME; }
+    [\r\n]+              { yybegin(YYINITIAL); return TokenType.WHITE_SPACE; }
+    <<EOF>>              { yybegin(YYINITIAL); return TokenType.WHITE_SPACE; }
+}
 
 /* ── Controle de fluxo ───────────────────────────────────────────────────── */
 "IF"                      { return SclTypes.IF; }

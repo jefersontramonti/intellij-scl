@@ -133,13 +133,21 @@ class SclStmtElement(
         var pastRegion = false
         while (node != null) {
             when {
-                node.elementType == SclTypes.REGION                   -> pastRegion = true
-                pastRegion && node.elementType == SclTypes.IDENTIFIER -> return node.text
-                pastRegion                                            -> return null
+                node.elementType == SclTypes.REGION      -> pastRegion = true
+                pastRegion && node.elementType == SclTypes.REGION_NAME -> return node.text.trim()
+                pastRegion && node.elementType !in SKIP_IN_NAME -> return null
             }
             node = node.treeNext
         }
         return null
+    }
+
+    companion object {
+        private val SKIP_IN_NAME = setOf(
+            com.intellij.psi.TokenType.WHITE_SPACE,
+            SclTypes.LINE_COMMENT,
+            SclTypes.BLOCK_COMMENT
+        )
     }
 
     private fun extractForVar(forStmt: SclForStatement): String? {

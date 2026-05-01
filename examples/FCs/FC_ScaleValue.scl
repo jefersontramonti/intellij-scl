@@ -1,0 +1,55 @@
+FUNCTION FC_ScaleValue : Real
+{ S7_Optimized_Access := 'TRUE' }
+
+
+VAR_INPUT
+    i_RawValue  : Int;
+    i_RawMin    : Int  := 0;
+    i_RawMax    : Int  := 27648;
+    i_EuMin     : Real := 0.0;
+    i_EuMax     : Real := 100.0;
+    i_Clamp     : Bool := TRUE;
+END_VAR
+
+VAR_OUTPUT
+    o_Scaled        : Real;
+    o_OutOfRange    : Bool;
+END_VAR
+
+VAR_TEMP
+    t_Range     : Real;
+    t_Raw       : Real;
+    t_Result    : Real;
+END_VAR
+
+BEGIN
+
+    // Verificação de range inválido
+    IF i_RawMax = i_RawMin THEN
+        FC_ScaleValue := 0.0;
+        o_OutOfRange  := TRUE;
+        RETURN;
+    END_IF;
+
+    // Escalonamento linear
+    t_Raw    := INT_TO_REAL(i_RawValue);
+    t_Range  := INT_TO_REAL(i_RawMax - i_RawMin);
+    t_Result := ((t_Raw - INT_TO_REAL(i_RawMin)) / t_Range)
+                * (i_EuMax - i_EuMin) + i_EuMin;
+
+    // Clamping opcional
+    o_OutOfRange := FALSE;
+    IF i_Clamp THEN
+        IF t_Result < i_EuMin THEN
+            t_Result     := i_EuMin;
+            o_OutOfRange := TRUE;
+        ELSIF t_Result > i_EuMax THEN
+            t_Result     := i_EuMax;
+            o_OutOfRange := TRUE;
+        END_IF;
+    END_IF;
+
+    FC_ScaleValue := t_Result;
+    o_Scaled      := t_Result;
+
+END_FUNCTION

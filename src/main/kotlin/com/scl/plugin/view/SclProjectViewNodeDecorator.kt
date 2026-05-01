@@ -26,6 +26,12 @@ class SclProjectViewNodeDecorator : ProjectViewNodeDecorator {
         val project = node.project ?: return
         if (project.isDisposed) return
 
+        // Safety files (F_*.scl) get their own icon before PSI lookup
+        if (vf.nameWithoutExtension.startsWith("F_")) {
+            data.setIcon(SclIcons.SAFETY_BLOCK)
+            return
+        }
+
         val icon: Icon? = ReadAction.compute<Icon?, Throwable> {
             if (project.isDisposed) return@compute null
             val psiFile = PsiManager.getInstance(project).findFile(vf) ?: return@compute null

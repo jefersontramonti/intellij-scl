@@ -10,4 +10,5 @@ object SclIcons {
     val ORG_BLOCK      = AllIcons.Nodes.Plugin
     val UDT            = AllIcons.Nodes.Record
     val DATA_BLOCK     = AllIcons.Nodes.DataTables
+    val SAFETY_BLOCK   = AllIcons.Nodes.ErrorIntroduction
 }

@@ -1,0 +1,377 @@
+FUNCTION_BLOCK FB_PluginTest_Safe
+{ S7_Optimized_Access := 'TRUE' }
+
+    VAR_INPUT
+        i_Bool : Bool;
+        i_Int : Int;
+        i_DInt : DInt;
+        i_Real : Real;
+        i_LReal : LReal;
+        i_LInt : LInt;
+        i_Time : Time;
+        i_LTime : LTime;
+        i_String : String;
+        i_StringN : String[64];
+        i_Byte : Byte;
+        i_Word : Word;
+        i_DWord : DWord;
+        i_LWord : LWord;
+        i_WString : WString;
+        i_ArrayInt : Array[0..9] of
+        Int;
+        i_Array2D : Array[0..3, 0..3] of
+        Real;
+    END_VAR
+
+    VAR_OUTPUT
+        o_Bool : Bool;
+        o_Int : Int;
+        o_Real : Real;
+        o_String : String[64];
+    END_VAR
+
+    VAR_IN_OUT
+        io_Counter : Int;
+        io_Buffer : Array[0..15] of
+        Byte;
+    END_VAR
+
+    VAR
+    // Timers
+        m_TON : TON;
+        m_TOF : TOF;
+        m_TP : TP;
+        m_TONR : TONR;
+
+    // Contadores
+        m_CTU : CTU;
+        m_CTD : CTD;
+        m_CTUD : CTUD;
+
+    // Edge detection
+        m_RTrig : R_TRIG;
+        m_FTrig : F_TRIG;
+
+    // Motion Control — S7-1500
+        m_MC_Power : MC_Power;
+        m_MC_Home : MC_Home;
+        m_MC_MoveAbs : MC_MoveAbsolute;
+        m_MC_MoveVel : MC_MoveVelocity;
+        m_MC_Halt : MC_Halt;
+        m_MC_Reset : MC_Reset;
+
+    // STRUCT inline em VAR
+        m_LocalStruct : STRUCT
+            Flag1 : Bool;
+            Flag2 : Bool;
+            Value : Real;
+            Counter : Int;
+        END_STRUCT;
+
+        m_State : Int;
+        m_Accumulator : Real;
+        m_LoopCount : DInt;
+        m_PrevBool : Bool;
+    END_VAR
+
+    VAR_TEMP
+        t_Bool : Bool;
+        t_Int : Int;
+        t_Real : Real;
+        t_DInt : DInt;
+        t_String : String[32];
+        t_Index : Int;
+        t_Math : Real;
+    END_VAR
+
+BEGIN
+
+// =========================================================================
+// 1. COMENTÁRIOS
+// =========================================================================
+// Linha simples
+(* Bloco simples *)
+(* Bloco multi-linha *)
+// =========================================================================
+// 2. ATRIBUIÇÕES — literais de todos os tipos
+// =========================================================================
+
+    t_Bool := TRUE;
+    t_Bool := FALSE;
+    t_Int := 42;
+    t_Int := 16#FF;
+    t_Int := 2#1010_1010;
+    t_Int := - 100;
+    t_Real := 3.14;
+    t_Real := 1.0E+3;
+
+    // Acesso a STRUCT inline
+    m_LocalStruct.Flag1 := TRUE;
+    m_LocalStruct.Value := 100.0;
+
+    // Acesso a DB global via quoted identifier
+    "DB_GlobalData".SystemReady := i_Bool;
+    "DB_GlobalData".ProcessArray[0] := i_Int;
+
+    // Array
+    t_Int := i_ArrayInt[0];
+    t_Int := i_ArrayInt[i_Int];
+    t_Real := i_Array2D[1, 2];
+
+    // =========================================================================
+    // 3. EXPRESSÕES — todos os operadores
+    // =========================================================================
+
+    t_Real := i_Real + 1.0;
+    t_Real := i_Real - i_LReal;
+    t_Real := i_Real * 100.0;
+    t_Real := i_Real / 2.0;
+    t_Int := i_Int MOD 10;
+    t_Int := i_Int DIV 3;
+    t_DInt := i_DInt ** 2;
+
+    t_Bool := i_Bool AND m_PrevBool;
+    t_Bool := i_Bool OR m_PrevBool;
+    t_Bool := i_Bool XOR m_PrevBool;
+    t_Bool := NOT i_Bool;
+
+    t_Bool := i_Int = 100;
+    t_Bool := i_Int <> 0;
+    t_Bool := i_Real > 0.0;
+    t_Bool := i_Real < 100.0;
+    t_Bool := i_Int >= 10;
+    t_Bool := i_Int <= 99;
+
+    // =========================================================================
+    // 4. IF / ELSIF / ELSE
+    // =========================================================================
+
+    IF i_Bool THEN
+        o_Bool := TRUE;
+    ELSIF i_Int > 100 THEN
+        o_Bool := FALSE;
+        o_Int := 100;
+    ELSIF i_Real > 0.0 AND i_Real < 100.0 THEN
+        t_Real := i_Real * 2.0;
+    ELSE
+        o_Bool := NOT m_PrevBool;
+    END_IF;
+
+    // =========================================================================
+    // 5. CASE — range, múltiplos valores, ELSE
+    // =========================================================================
+
+    CASE m_State OF
+        0 :
+            o_Bool := FALSE;
+            o_Int := 0;
+        1 :
+            o_Bool := TRUE;
+        2 :
+            o_Bool := FALSE;
+            o_Int := - 1;
+        10, 11, 12 :
+            t_Int := m_State * 2;
+        20..29 :
+            t_Int := m_State - 20;
+        ELSE :
+            o_Int := - 99;
+    END_CASE;
+
+    // =========================================================================
+    // 6. FOR — BY positivo, negativo, EXIT, CONTINUE
+    // =========================================================================
+
+    FOR t_Index := 0 TO 9 DO
+        i_ArrayInt[t_Index] := t_Index * 2;
+    END_FOR;
+
+    FOR t_Index := 0 TO 9 BY 2 DO
+        i_ArrayInt[t_Index] := 0;
+    END_FOR;
+
+    FOR t_Index := 9 TO 0 BY - 1 DO
+        IF i_ArrayInt[t_Index] < 0 THEN
+            EXIT;
+        END_IF;
+        IF i_ArrayInt[t_Index] = 0 THEN
+            CONTINUE;
+        END_IF;
+        m_Accumulator := m_Accumulator + INT_TO_REAL(i_ArrayInt[t_Index]);
+    END_FOR;
+
+    // =========================================================================
+    // 7. WHILE
+    // =========================================================================
+
+    t_Int := 0;
+    WHILE t_Int < 10 AND i_Bool DO
+        t_Int := t_Int + 1;
+        m_LoopCount := m_LoopCount + 1;
+    END_WHILE;
+
+    // =========================================================================
+    // 8. REPEAT / UNTIL
+    // =========================================================================
+
+    t_Int := 0;
+    REPEAT
+        t_Int := t_Int + 1;
+    UNTIL t_Int >= 5
+    END_REPEAT;
+
+    // =========================================================================
+    // 9. TIMERS
+    // =========================================================================
+
+    m_TON(IN := i_Bool, PT := T#5S);
+    t_Bool := m_TON.Q;
+
+    m_TOF(IN := i_Bool, PT := T#2S_500MS);
+
+    m_TP(IN := i_Bool, PT := T#100MS);
+
+    m_TONR(IN := i_Bool, R := NOT i_Bool, PT := T#10S);
+
+    // =========================================================================
+    // 10. CONTADORES
+    // =========================================================================
+
+    m_CTU(CU := m_RTrig.Q, R := i_Bool, PV := 100);
+    t_Bool := m_CTU.Q;
+    t_Int := m_CTU.CV;
+
+    m_CTD(CD := i_Bool, LD := NOT i_Bool, PV := 50);
+
+    m_CTUD(
+        CU := m_RTrig.Q,
+        CD := m_FTrig.Q,
+        R := FALSE,
+        LD := FALSE,
+        PV := 100
+    );
+    t_Bool := m_CTUD.QU;
+    t_Bool := m_CTUD.QD;
+
+    // =========================================================================
+    // 11. EDGE DETECTION
+    // =========================================================================
+
+    m_RTrig(CLK := i_Bool);
+    m_FTrig(CLK := i_Bool);
+
+    // =========================================================================
+    // 12. MOTION CONTROL — S7-1500
+    // =========================================================================
+
+    m_MC_Power(
+        Axis := "Axis_1",
+        Enable := i_Bool,
+        StartMode := 0,
+        StopMode := 0
+    );
+
+    m_MC_Home(
+        Axis := "Axis_1",
+        Execute := m_RTrig.Q,
+        Position := 0.0,
+        Mode := 3
+    );
+
+    m_MC_MoveAbs(
+        Axis := "Axis_1",
+        Execute := m_RTrig.Q,
+        Position := 100.0,
+        Velocity := 50.0
+    );
+    t_Bool := m_MC_MoveAbs.Done;
+    t_Bool := m_MC_MoveAbs.Busy;
+    t_Bool := m_MC_MoveAbs.Error;
+
+    m_MC_MoveVel(
+        Axis := "Axis_1",
+        Execute := i_Bool,
+        Velocity := 50.0,
+        Direction := 0
+    );
+
+    m_MC_Halt(Axis := "Axis_1", Execute := NOT i_Bool);
+
+    m_MC_Reset(Axis := "Axis_1", Execute := m_RTrig.Q);
+
+    // =========================================================================
+    // 13. FUNÇÕES MATEMÁTICAS
+    // =========================================================================
+
+    t_Math := ABS(i_Real);
+    t_Math := SQRT(i_Real);
+    t_Math := SQR(i_Real);
+    t_Math := SIN(i_Real);
+    t_Math := COS(i_Real);
+    t_Math := TAN(i_Real);
+    t_Math := ASIN(i_Real);
+    t_Math := ACOS(i_Real);
+    t_Math := ATAN(i_Real);
+    t_Math := EXP(i_Real);
+    t_Math := LN(i_Real);
+    t_Math := LOG(i_Real);
+    t_Math := FRAC(i_Real);
+
+    // =========================================================================
+    // 14. CONVERSÃO
+    // =========================================================================
+
+    t_Real := INT_TO_REAL(i_Int);
+    t_Int := REAL_TO_INT(i_Real);
+    t_Real := DINT_TO_REAL(i_DInt);
+    t_DInt := TIME_TO_DINT(i_Time);
+    t_Real := ROUND(i_Real);
+    t_Real := TRUNC(i_Real);
+    t_Real := CEIL(i_Real);
+    t_Real := FLOOR(i_Real);
+    t_Real := NORM_X(MIN := 0.0, VALUE := i_Real, MAX := 100.0);
+    t_Real := SCALE_X(MIN := 0.0, VALUE := t_Real, MAX := 100.0);
+
+    // =========================================================================
+    // 15. STRING FUNCTIONS
+    // =========================================================================
+
+    t_Int := LEN(i_String);
+    t_String := LEFT(IN := i_String, L := 5);
+    t_String := RIGHT(IN := i_String, L := 3);
+    t_String := MID(IN := i_String, L := 4, P := 1);
+    t_String := CONCAT(IN1 := i_String, IN2 := 'suffix');
+    t_Int := FIND(IN1 := i_String, IN2 := 'A');
+
+    // =========================================================================
+    // 16. CHAMADA DE FC com resultado + quoted identifier
+    // =========================================================================
+
+    t_Real := FC_ScaleValue(
+    i_RawValue := i_Int,
+    i_RawMin := 0,
+    i_RawMax := 27648,
+    i_EuMin := 0.0,
+    i_EuMax := 100.0,
+    i_Clamp := TRUE,
+    o_OutOfRange => t_Bool
+    );
+
+    // =========================================================================
+    // 17. RETURN antecipado
+    // =========================================================================
+
+    IF m_CTU.Q AND o_Bool THEN
+        o_Int := 100;
+        RETURN;
+    END_IF;
+
+    // =========================================================================
+    // 18. SAÍDAS
+    // =========================================================================
+
+    o_Int := m_CTU.CV;
+    o_Real := m_Accumulator;
+    o_String := t_String;
+
+END_FUNCTION_BLOCK

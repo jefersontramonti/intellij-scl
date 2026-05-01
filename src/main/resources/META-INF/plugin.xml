@@ -242,6 +242,74 @@
             level="WARNING"
             implementationClass="com.scl.plugin.linter.inspections.SclCaseElseInspection"/>
 
+        <!-- ── Fase 9: Safety Inspections ──────────────────────────────────────
+             Aparecem em Settings → Editor → Inspections → SCL Safety.
+             Só disparam dentro de blocos cujo nome começa com F_ (F-program).
+             ──────────────────────────────────────────────────────────── -->
+
+        <localInspection
+            language="SCL"
+            shortName="SclSafetyGoto"
+            displayName="GOTO in Safety program"
+            groupName="SCL Safety"
+            enabledByDefault="true"
+            level="ERROR"
+            implementationClass="com.scl.plugin.linter.safety.SclSafetyGotoInspection"/>
+
+        <localInspection
+            language="SCL"
+            shortName="SclSafetyType"
+            displayName="Unsupported type in Safety program"
+            groupName="SCL Safety"
+            enabledByDefault="true"
+            level="ERROR"
+            implementationClass="com.scl.plugin.linter.safety.SclSafetyTypeInspection"/>
+
+        <localInspection
+            language="SCL"
+            shortName="SclSafetyGlobalData"
+            displayName="Global DB access in F-FB"
+            groupName="SCL Safety"
+            enabledByDefault="true"
+            level="ERROR"
+            implementationClass="com.scl.plugin.linter.safety.SclSafetyGlobalDataInspection"/>
+
+        <localInspection
+            language="SCL"
+            shortName="SclSafetyJump"
+            displayName="Jump statement in Safety program"
+            groupName="SCL Safety"
+            enabledByDefault="true"
+            level="WARNING"
+            implementationClass="com.scl.plugin.linter.safety.SclSafetyJumpInspection"/>
+
+        <localInspection
+            language="SCL"
+            shortName="SclSafetyHeader"
+            displayName="Missing Safety block header"
+            groupName="SCL Safety"
+            enabledByDefault="true"
+            level="WARNING"
+            implementationClass="com.scl.plugin.linter.safety.SclSafetyHeaderInspection"/>
+
+        <localInspection
+            language="SCL"
+            shortName="SclSafetyCaseElse"
+            displayName="CASE without ELSE in Safety program"
+            groupName="SCL Safety"
+            enabledByDefault="true"
+            level="WARNING"
+            implementationClass="com.scl.plugin.linter.safety.SclSafetyCaseElseInspection"/>
+
+        <localInspection
+            language="SCL"
+            shortName="SclSafetyValueStatus"
+            displayName="F-I/O accessed without value status check"
+            groupName="SCL Safety"
+            enabledByDefault="true"
+            level="WARNING"
+            implementationClass="com.scl.plugin.linter.safety.SclSafetyValueStatusInspection"/>
+
         <!-- ── Hover Documentation (API moderna 2023.1+) ─────────────────────
              Exibe tooltip ao passar o mouse sobre variáveis SCL declaradas.
              Formato hover rapido: "nome — comentario: TIPO  [SECAO]"

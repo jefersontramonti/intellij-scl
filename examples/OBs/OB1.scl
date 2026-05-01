@@ -1,0 +1,27 @@
+ORGANIZATION_BLOCK OB1
+{ S7_Optimized_Access := 'TRUE' }
+
+    VAR_TEMP
+        t_Dummy : Bool;
+    END_VAR
+
+BEGIN
+
+// Chamada do FB principal — := para inputs, => para outputs
+    "DB_PluginTest"(
+        i_Bool := "Start_Button",
+        i_Int := 42,
+        i_Real := "DB_GlobalData".SetpointSpeed,
+        io_Counter := "DB_GlobalData".Motor1.FaultCode,
+        o_Bool => "DB_GlobalData".SystemReady,
+        o_Real => "DB_GlobalData".SetpointSpeed
+    );
+
+    // Chamada direta de FC com resultado
+    "DB_GlobalData".Motor1.Speed := FC_ScaleValue(
+    i_RawValue := "DB_GlobalData".Motor1.FaultCode,
+    i_EuMax := 100.0,
+    o_OutOfRange => t_Dummy
+    );
+
+END_ORGANIZATION_BLOCK

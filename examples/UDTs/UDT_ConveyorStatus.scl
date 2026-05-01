@@ -1,0 +1,8 @@
+TYPE UDT_ConveyorStatus
+    STRUCT
+        Active : Bool := FALSE;
+        Speed : Real := 0.0;
+        ItemCount : Int := 0;
+        LastError : DWord := 0;
+    END_STRUCT
+END_TYPE

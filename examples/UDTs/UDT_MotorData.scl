@@ -1,0 +1,21 @@
+TYPE UDT_MotorData
+
+    STRUCT
+        Speed : Real := 0.0;
+        Running : Bool := FALSE;
+        FaultCode : Int := 0;
+        Name : String[32] := 'Motor';
+        Position : LReal := 0.0;
+
+
+        Limits : STRUCT
+            SpeedMin : Real := 0.0;
+            SpeedMax : Real := 100.0;
+            PosMin : LReal := - 1000.0;
+            PosMax : LReal := 1000.0;
+        END_STRUCT;
+
+        Diagnostics : Array[0..4] of
+        Word;
+    END_STRUCT
+END_TYPE
